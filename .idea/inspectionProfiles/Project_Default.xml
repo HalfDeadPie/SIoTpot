@@ -1,0 +1,21 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="Receiver.load_module" />
+          <option value="Receiver.sniffradio" />
+          <option value="Receiver.wrpcap" />
+          <option value="Receiver.scapy" />
+          <option value="Receiver.ZWaveReq" />
+          <option value="Receiver.ZWaveSwitchBin" />
+          <option value="Monitor.scapy" />
+          <option value="Monitor.ZWaveReq" />
+          <option value="Monitor.ZWaveSwitchBin" />
+          <option value="Monitor.Raw" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
