@@ -13,9 +13,15 @@ TX_GAIN = 'tx_gain'
 ZWAVE = 'Zwave'
 
 
+NETWORKS = 'networks'
+DECOYS = 'decoys'
+CTX_HOME_ID = 'homeid'
+
+
 MONITOR = 'monitor'
 
 CONFIG = 'config'
+CONFIGURATION = 'configuration'
 
 CRC_BYTE = 10
 
@@ -23,6 +29,7 @@ LOGGER = 'iotpot_logger'
 
 MESSAGE_BAD_CRC = 'Bad CRC'
 MESSAGE_CRC_OK = 'CRC OK'
+MESSAGE_RECORDS_MISSING = 'Decoys for this network are missing. Please, start recording them using a command "record"'
 
 NODE_ID_RANGE = 232
 

@@ -1,16 +1,20 @@
 import json
 import os
+from scapy.all import *
+
+
 import click
 import logging
 
 from Configuration import Configuration
 from Monitor import Monitor
 from TrafficGenerator import TrafficGenerator
-from CONSTANTS import MONITOR, CONFIG, LOGGER, MAPPING, PREFIX, SUFFIX
-
+from CONSTANTS import MONITOR, CONFIG, LOGGER, MAPPING, PREFIX, SUFFIX, NETWORKS, DECOYS, CONFIGURATION
 
 from copy import copy
 from logging import Formatter
+
+from multiprocessing import Process, Pipe
 
 
 def load_json(file):
@@ -18,6 +22,7 @@ def load_json(file):
         return json.load(open(file))
     else:
         return {}
+
 
 class ColoredFormatter(Formatter):
 
@@ -27,11 +32,12 @@ class ColoredFormatter(Formatter):
     def format(self, record):
         colored_record = copy(record)
         levelname = colored_record.levelname
-        seq = MAPPING.get(levelname, 37) # default white
+        seq = MAPPING.get(levelname, 37)  # default white
         colored_levelname = ('{0}{1}m{2}{3}') \
             .format(PREFIX, seq, levelname, SUFFIX)
         colored_record.levelname = colored_levelname
         return Formatter.format(self, colored_record)
+
 
 @click.group()
 @click.pass_context
@@ -56,6 +62,7 @@ def iotpot(ctx, config):
     ctx.obj[CONFIG] = config
     config_file = ctx.obj['config']
     configuration = Configuration(config_file)
+    ctx.obj[CONFIGURATION] = configuration
 
     # persistent networks and decoys information
     if not os.path.exists(configuration.networks_path):
@@ -64,8 +71,42 @@ def iotpot(ctx, config):
     network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
     decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
 
+    ctx.obj[NETWORKS] = network
+    ctx.obj[DECOYS] = decoys
+
     monitor = Monitor(configuration, network, decoys, iotpot_logger)
     ctx.obj[MONITOR] = monitor
+
+
+def monitor_target(conn, monitor):
+    monitor.start(conn)
+
+
+def generator_target(conn, generator):
+    home_id = conn.recv()
+    print 'HOME ID from GENERATOR: ', home_id
+    generator.start(home_id)
+
+def set_configuration(configuration, logger):
+    config_set = False
+    while not config_set:
+        time.sleep(1)
+        try:
+            print('Trying to set...')
+            gnuradio_set_vars(center_freq = configuration.freq,
+                              samp_rate = configuration.samp_rate,
+                              tx_gain = configuration.tx)
+
+            if gnuradio_get_vars('center_freq') == configuration.freq:
+                logger.debug('Center frequency set: ' + str(configuration.freq) + ' Hz')
+            if gnuradio_get_vars('samp_rate') == configuration.samp_rate:
+                logger.debug('Sample rate set: ' + str(configuration.samp_rate) + ' Hz')
+            if gnuradio_get_vars('tx_gain') == configuration.tx:
+                logger.debug('TX gain set: ' + str(configuration.tx) + 'db')
+
+            config_set = True
+        except:
+            pass
 
 
 @iotpot.command()
@@ -73,18 +114,31 @@ def iotpot(ctx, config):
 @click.option('--passive', '-p', is_flag=True)
 def run(ctx, passive):
     monitor = ctx.obj[MONITOR]
-    configuration = ctx.obj[CONFIG]
-    generator = TrafficGenerator(configuration)
-    log = ctx.obj[LOGGER]
+    configuration = ctx.obj[CONFIGURATION]
+    logger = ctx.obj[LOGGER]
+    generator = TrafficGenerator(configuration, ctx.obj[NETWORKS], ctx.obj[DECOYS], logger)
+    load_module('gnuradio')
 
     if passive:
-        monitor.start()
+        monitor.start(None)
     else:
-        pid = os.fork()
-        if pid == 0:
-            monitor.start()
-        else:
-            generator.start()
+        parent_monitor_conn, monitor_conn = Pipe()
+        parent_generator_conn, generator_conn = Pipe()
+
+        monitor_process = Process(target=monitor_target, args=(monitor_conn, monitor))
+        generator_process = Process(target=generator_target, args=(generator_conn, generator))
+        configuration_process = Process(target=set_configuration, args=(configuration, logger))
+
+        monitor_process.start()
+        generator_process.start()
+        configuration_process.start()
+        configuration_process.join()
+
+        home_id = parent_monitor_conn.recv()
+        parent_generator_conn.send(home_id)
+
+        monitor_process.join()
+        generator_process.join()
 
 
 @iotpot.command()

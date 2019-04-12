@@ -12,8 +12,8 @@ class Monitor():
         self.decoys = decoys
         self.receiver = Receiver(self, configuration, self.network, self.decoys, self.logger)
 
-    def start(self):
-        self.receiver.start(False)
+    def start(self, conn):
+        self.receiver.start(False, conn)
 
     def record(self):
         self.receiver.start(True)
@@ -29,11 +29,13 @@ class Monitor():
         except:
             pass
 
+
         try:
             command = readable_value(frame[ZWaveSwitchBin], 'cmd')
             message += str(command) + ' '
         except:
             pass
+
 
         try:
             payload = readable_value(frame[Raw], 'load')
@@ -44,6 +46,7 @@ class Monitor():
         return message
 
     def analyse_frame(self, frame):
+        self.logger.debug(self.build_attempt_message(frame))
         if ZWaveReq in frame:
             if ZWaveSwitchBin in frame:
                 command = readable_value(frame[ZWaveSwitchBin], 'cmd')

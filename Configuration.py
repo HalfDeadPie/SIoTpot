@@ -2,14 +2,17 @@ import configparser
 from CONSTANTS import COMMUNICATION, TX_GAIN, FREQ, SAMP_RATE, RECORDING, RECORDS_PATH, \
     NETWORKS_PATH, REAL_NETWORKS_NAME, VIRTUAL_NETWORKS_NAME
 
+
 def parse(file):
     parser = configparser.ConfigParser()
     parser.optionxform = str
     parser.read(file, encoding='utf8')
     return parser
 
+
 class Configuration():
     def __init__(self, filepath):
+        self.home_id = None
         parser = parse(filepath)
         if parser.has_section(COMMUNICATION):
             parameters = parser[COMMUNICATION]

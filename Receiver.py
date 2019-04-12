@@ -1,11 +1,15 @@
+import sys
 import time
 import random
 import array
 from scapy.all import *
-from CONSTANTS import ZWAVE, MESSAGE_BAD_CRC, NODE_ID_RANGE, FILE_TIME_FORMAT, RECORD_EXTENSION
+from CONSTANTS import ZWAVE, MESSAGE_BAD_CRC, MESSAGE_CRC_OK, MESSAGE_RECORDS_MISSING, \
+    NODE_ID_RANGE, FILE_TIME_FORMAT, RECORD_EXTENSION
 from Support import *
+from multiprocessing import Process, Pipe
 
 import json
+
 
 class Receiver():
 
@@ -17,14 +21,15 @@ class Receiver():
         self.decoys = decoys
         self.logger = logger
         self.free_ids = {}
+        self.conn = None
 
     def filter_free_ids(self):
-        for home_id, node_list in self.networks.iteritems():                  # for all real networks
-            self.free_ids[home_id] = list(range(NODE_ID_RANGE))               # create range of free node IDs
-            for node in node_list:                                            # and every real node
-                self.free_ids[home_id].remove(node)                           # delete from free IDs
+        for home_id, node_list in self.networks.iteritems():  # for all real networks
+            self.free_ids[home_id] = list(range(NODE_ID_RANGE))  # create range of free node IDs
+            for node in node_list:  # and every real node
+                self.free_ids[home_id].remove(node)  # delete from free IDs
 
-            if home_id in self.decoys.keys():                                 # and do same thing with decoys
+            if home_id in self.decoys.keys():  # and do same thing with decoys
                 for node, _ in self.decoys[home_id].iteritems():
                     self.free_ids[home_id].remove(node)
 
@@ -40,22 +45,6 @@ class Receiver():
         except:
             return None
 
-    def calc_crc(self, frame):
-        byte_array = array('B', str(frame[ZWaveReq]))
-        try:
-            byte_array.remove(frame.crc)
-        except:
-            self.logger.debug(MESSAGE_BAD_CRC)
-            pass
-        checksum = 0xff
-        iterator = 0
-        for byte in byte_array:
-            checksum ^= byte
-            # print("%d: %x" % (iterator, byte))
-            iterator += 1
-
-        return checksum
-
     def filter_frames(self, framelist):
         for frame in framelist:
             if ZWaveReq in frame:
@@ -67,10 +56,10 @@ class Receiver():
     def save_networks(self):
         json.dump(self.networks,
                   open(self.configuration.networks_path + '/' +
-                        self.configuration.real_networks_name, 'w'))
+                       self.configuration.real_networks_name, 'w'))
         json.dump(self.decoys,
                   open(self.configuration.networks_path + '/' +
-                        self.configuration.virtual_networks_name, 'w'))
+                       self.configuration.virtual_networks_name, 'w'))
 
     def map_network(self, frame):
         home_id = text_id(frame.homeid)
@@ -86,22 +75,22 @@ class Receiver():
         mapped_pairs = {}
         record_name = str(time.strftime(FILE_TIME_FORMAT)) + RECORD_EXTENSION
 
-        for home_id, nodelist in self.networks.iteritems():                          # for all saved real nodes
+        for home_id, nodelist in self.networks.iteritems():  # for all saved real nodes
             for real_node in nodelist:
-                virtual_node = random.choice(self.free_ids[home_id])                # generate random virtual ID
-                self.free_ids[home_id].remove(virtual_node)                                  # remove it from free ID list
-                mapped_pairs[real_node] = virtual_node                              # map virtual and real nodes
+                virtual_node = random.choice(self.free_ids[home_id])  # generate random virtual ID
+                self.free_ids[home_id].remove(virtual_node)  # remove it from free ID list
+                mapped_pairs[real_node] = virtual_node  # map virtual and real nodes
 
                 # create dict with empty file list for record of decoy
-                safe_create_dict_dict(self.decoys, home_id)                         # create decoys
-                safe_create_dict_list(self.decoys[home_id], virtual_node)           # create their record list
-                safe_append(self.decoys[home_id][virtual_node], record_name)        # remember decoy : [record list]
+                safe_create_dict_dict(self.decoys, home_id)  # create decoys
+                safe_create_dict_list(self.decoys[home_id], virtual_node)  # create their record list
+                safe_append(self.decoys[home_id][virtual_node], record_name)  # remember decoy : [record list]
 
-        for frame in framelist:                                                     # for all recorded frames
-            frame.src = mapped_pairs[frame.src]                                     # swap real and virtual IDs
-            frame.dst = mapped_pairs[frame.dst]                                     # ID of nodes
+        for frame in framelist:  # for all recorded frames
+            frame.src = mapped_pairs[frame.src]  # swap real and virtual IDs
+            frame.dst = mapped_pairs[frame.dst]  # ID of nodes
 
-        wrpcap(directory + '/' + record_name, framelist)                            # save records to pcap files
+        wrpcap(directory + '/' + record_name, framelist)  # save records to pcap files
 
     def delete_record(self, records):
         for record in records:
@@ -121,36 +110,55 @@ class Receiver():
 
     # start activity ---------------------------------------------------------------------------------------------------
 
-    def start(self, recording):
-        load_module('gnuradio')
+    def start(self, recording, conn):
+        #load_module('gnuradio')
+        self.conn = conn
 
-        if recording:                                                               # in case of recording
-            sniffradio(radio=ZWAVE, prn=lambda frame: self.record(frame))           # sniff frames until user signal
+        if recording:  # in case of recording
+            sniffradio(radio=ZWAVE, prn=lambda frame: self.record(frame))  # sniff frames until user signal
 
-            for home_id, frame_list in self.recorded_frames.iteritems():            # for all recorded frames
-                self.filter_frames(frame_list)                                      # filter GET and SET frames
-                directory = self.configuration.records_path + '/' + home_id + '/'   # prepare directory for records
+            for home_id, frame_list in self.recorded_frames.iteritems():  # for all recorded frames
+                self.filter_frames(frame_list)  # filter GET and SET frames
+                directory = self.configuration.records_path + '/' + home_id + '/'  # prepare directory for records
                 safe_create_dir(directory)
                 self.filter_free_ids()
-                self.virtualize_and_save_record(frame_list, directory)              # virtualize and save them
+                self.virtualize_and_save_record(frame_list, directory)  # virtualize and save them
         else:
             sniffradio(radio=ZWAVE, prn=lambda p: self.handle(p))
 
-        self.save_networks()                                                        # always save networks and decoys
+        self.save_networks()  # always save networks and decoys
+
+    def handle_generator(self, frame):
+        home_id = text_id(frame.homeid)
+        if home_id in self.decoys.keys():
+            self.logger.debug('Setting HomeID to configuration')
+            self.configuration.home_id = home_id
+            try:
+                self.conn.send(home_id)
+            except:
+                pass
+        else:
+            self.logger.error(MESSAGE_RECORDS_MISSING)
+            sys.exit()
 
     # frame handlers ---------------------------------------------------------------------------------------------------
 
     def handle(self, frame):
-        if self.calc_crc(frame) == frame.crc:
-            decoys = self.list_decoys(text_id(frame.homeid))
-            if frame.dst in decoys:
-                self.monitor.analyse_frame(frame)
+        if calc_crc(frame) == frame.crc:
+            self.logger.debug(MESSAGE_CRC_OK)
+            if not self.configuration.home_id:
+                self.handle_generator(frame)
 
+            decoys = self.list_decoys(text_id(frame.homeid))
+            if decoys and frame.dst in decoys:
+                self.monitor.analyse_frame(frame)
+            else:
+                self.map_network(frame)
         else:
             self.logger.debug(MESSAGE_BAD_CRC)
 
     def record(self, frame):
-        if self.calc_crc(frame) == frame.crc:
+        if calc_crc(frame) == frame.crc:
             frame.show()
             home_id = text_id(frame.homeid)
 
