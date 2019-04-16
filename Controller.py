@@ -1,5 +1,7 @@
 import json
 import os
+import time
+
 from scapy.all import *
 
 
@@ -9,7 +11,8 @@ import logging
 from Configuration import Configuration
 from Monitor import Monitor
 from TrafficGenerator import TrafficGenerator
-from CONSTANTS import MONITOR, CONFIG, LOGGER, MAPPING, PREFIX, SUFFIX, NETWORKS, DECOYS, CONFIGURATION
+from CONSTANTS import MONITOR, GENERATOR, CONFIG, LOGGER, MAPPING, PREFIX, SUFFIX, NETWORKS, DECOYS, CONFIGURATION, \
+    RECEIVER_CONN, TRANSMITTER_CONN
 
 from copy import copy
 from logging import Formatter
@@ -74,18 +77,27 @@ def iotpot(ctx, config):
     ctx.obj[NETWORKS] = network
     ctx.obj[DECOYS] = decoys
 
-    monitor = Monitor(configuration, network, decoys, iotpot_logger)
+    # monitor - generator pipe
+    monitor_conn, generator_conn = Pipe()
+    receiver_conn, transmitter_conn = Pipe()
+
+    # monitor
+    monitor = Monitor(configuration, network, decoys,
+                      iotpot_logger, monitor_conn, receiver_conn)
     ctx.obj[MONITOR] = monitor
 
+    # generator
+    generator = TrafficGenerator(configuration, ctx.obj[NETWORKS], ctx.obj[DECOYS],
+                                 iotpot_logger, generator_conn, transmitter_conn)
+    ctx.obj[GENERATOR] = generator
 
-def monitor_target(conn, monitor):
-    monitor.start(conn)
+
+def monitor_target(monitor):
+    monitor.start()
 
 
-def generator_target(conn, generator):
-    home_id = conn.recv()
-    print 'HOME ID from GENERATOR: ', home_id
-    generator.start(home_id)
+def generator_target(generator):
+    generator.start()
 
 def set_configuration(configuration, logger):
     config_set = False
@@ -114,29 +126,22 @@ def set_configuration(configuration, logger):
 @click.option('--passive', '-p', is_flag=True)
 def run(ctx, passive):
     monitor = ctx.obj[MONITOR]
+    generator = ctx.obj[GENERATOR]
     configuration = ctx.obj[CONFIGURATION]
     logger = ctx.obj[LOGGER]
-    generator = TrafficGenerator(configuration, ctx.obj[NETWORKS], ctx.obj[DECOYS], logger)
-    load_module('gnuradio')
 
     if passive:
-        monitor.start(None)
+        monitor.start()
     else:
-        parent_monitor_conn, monitor_conn = Pipe()
-        parent_generator_conn, generator_conn = Pipe()
-
-        monitor_process = Process(target=monitor_target, args=(monitor_conn, monitor))
-        generator_process = Process(target=generator_target, args=(generator_conn, generator))
+        monitor_process = Process(target=monitor_target, args=(monitor,))
+        generator_process = Process(target=generator_target, args=(generator,))
         configuration_process = Process(target=set_configuration, args=(configuration, logger))
 
         monitor_process.start()
         generator_process.start()
         configuration_process.start()
+
         configuration_process.join()
-
-        home_id = parent_monitor_conn.recv()
-        parent_generator_conn.send(home_id)
-
         monitor_process.join()
         generator_process.join()
 
@@ -144,6 +149,7 @@ def run(ctx, passive):
 @iotpot.command()
 @click.pass_context
 def record(ctx):
+    #load_module('gnuradio')
     monitor = ctx.obj[MONITOR]
     monitor.record()
 

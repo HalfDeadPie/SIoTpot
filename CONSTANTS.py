@@ -19,11 +19,14 @@ CTX_HOME_ID = 'homeid'
 
 
 MONITOR = 'monitor'
+GENERATOR = 'generator'
+RECEIVER_CONN = 'receiver_conn'
+TRANSMITTER_CONN = 'transmitter_conn'
 
 CONFIG = 'config'
 CONFIGURATION = 'configuration'
 
-CRC_BYTE = 10
+SENT_Q_SIZE = 10
 
 LOGGER = 'iotpot_logger'
 

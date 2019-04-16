@@ -7,14 +7,15 @@ from Transmitter import Transmitter
 
 class TrafficGenerator():
 
-    def __init__(self, configuration, networks, decoys, logger):
+    def __init__(self, configuration, networks, decoys, logger, generator_conn, transmitter_conn):
         self.configuration = configuration
-        self.transmitter = Transmitter(configuration)
+        self.conn = generator_conn
         self.networks = networks
         self.decoys = decoys
         self.logger = logger
         self.decoy_frame_lists = {}
         self.records = []
+        self.transmitter = Transmitter(configuration, transmitter_conn)
 
     def load_decoys_frames(self, home_id):
         record_files = self.decoys[home_id].values()
@@ -25,7 +26,10 @@ class TrafficGenerator():
                 self.records.append(frame)
 
 
-    def start(self, home_id):
+    def start(self):
+        # receive HomeID of virtual network from receiver
+        home_id = self.conn.recv()
+        self.logger.debug('Setting HomeID for traffic generator: ' + home_id)
         self.load_decoys_frames(home_id)
         while True:
             for frame in self.records:

@@ -1,10 +1,12 @@
+import collections
 import sys
+import threading
 import time
 import random
 import array
 from scapy.all import *
 from CONSTANTS import ZWAVE, MESSAGE_BAD_CRC, MESSAGE_CRC_OK, MESSAGE_RECORDS_MISSING, \
-    NODE_ID_RANGE, FILE_TIME_FORMAT, RECORD_EXTENSION
+    NODE_ID_RANGE, FILE_TIME_FORMAT, RECORD_EXTENSION, SENT_Q_SIZE
 from Support import *
 from multiprocessing import Process, Pipe
 
@@ -13,7 +15,7 @@ import json
 
 class Receiver():
 
-    def __init__(self, monitor, configuration, network, decoys, logger):
+    def __init__(self, monitor, configuration, network, decoys, logger, receiver_conn):
         self.monitor = monitor
         self.configuration = configuration
         self.recorded_frames = {}
@@ -21,7 +23,10 @@ class Receiver():
         self.decoys = decoys
         self.logger = logger
         self.free_ids = {}
-        self.conn = None
+        self.conn = receiver_conn
+        self.decoy_frames_out = collections.deque(SENT_Q_SIZE * [None], SENT_Q_SIZE)
+        self.decoy_frames_in = collections.deque(SENT_Q_SIZE * [None], SENT_Q_SIZE)
+        load_module('gnuradio')
 
     def filter_free_ids(self):
         for home_id, node_list in self.networks.iteritems():  # for all real networks
@@ -108,11 +113,24 @@ class Receiver():
                 self.delete_record(records_to_delete)
                 del (self.decoys[home_id][node])
 
+    def synchronizer(self):
+        while True:
+            if self.conn.poll():
+                frame_hash = self.conn.recv()
+                self.decoy_frames_out.appendleft(frame_hash)
+            else:
+                pass
+
+    def decoy_in_frame(self, frame):
+        decoys = self.list_decoys(text_id(frame.homeid))
+        if decoys and (str(frame.dst) in decoys or str(frame.src) in decoys):
+            return True
+        else:
+            return False
+
     # start activity ---------------------------------------------------------------------------------------------------
 
-    def start(self, recording, conn):
-        #load_module('gnuradio')
-        self.conn = conn
+    def start(self, recording):
 
         if recording:  # in case of recording
             sniffradio(radio=ZWAVE, prn=lambda frame: self.record(frame))  # sniff frames until user signal
@@ -124,34 +142,37 @@ class Receiver():
                 self.filter_free_ids()
                 self.virtualize_and_save_record(frame_list, directory)  # virtualize and save them
         else:
+            #  daemon thread for heartbeat to leader
+            self.logger.debug('Starting receiver')
+            # create sync for pipe receiving hash of sent frames
+            sync_thread = threading.Thread(name='synch_thread', target=self.synchronizer)
+            sync_thread.setDaemon(True)
+            sync_thread.start()
             sniffradio(radio=ZWAVE, prn=lambda p: self.handle(p))
 
         self.save_networks()  # always save networks and decoys
-
-    def handle_generator(self, frame):
-        home_id = text_id(frame.homeid)
-        if home_id in self.decoys.keys():
-            self.logger.debug('Setting HomeID to configuration')
-            self.configuration.home_id = home_id
-            try:
-                self.conn.send(home_id)
-            except:
-                pass
-        else:
-            self.logger.error(MESSAGE_RECORDS_MISSING)
-            sys.exit()
 
     # frame handlers ---------------------------------------------------------------------------------------------------
 
     def handle(self, frame):
         if calc_crc(frame) == frame.crc:
             self.logger.debug(MESSAGE_CRC_OK)
-            if not self.configuration.home_id:
-                self.handle_generator(frame)
 
-            decoys = self.list_decoys(text_id(frame.homeid))
-            if decoys and frame.dst in decoys:
-                self.monitor.analyse_frame(frame)
+            # only first message to stick on Home ID
+            if not self.configuration.home_id:
+                self.monitor.handle_generator(frame)
+
+            if self.decoy_in_frame(frame):
+                self.logger.debug('Received Virtual Frame')
+                frame_hash = calc_hash(frame)
+                if frame_hash in self.decoy_frames_out:
+                    if frame_hash not in self.decoy_frames_in:
+                        self.decoy_frames_in.appendleft(frame)
+                    else:
+                        self.monitor.detect_attempt_replay(frame)
+
+                else:
+                    self.monitor.detect_attempt_modified(frame)
             else:
                 self.map_network(frame)
         else:

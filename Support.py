@@ -1,6 +1,7 @@
 import os
 from array import array
 from scapy.all import *
+import xxhash
 
 def text_id(home_id):
     return str(hex(home_id))
@@ -49,3 +50,7 @@ def calc_crc(frame):
         iterator += 1
 
     return checksum
+
+def calc_hash(frame):
+    byte_array = array('B', str(frame[ZWaveReq]))
+    return xxhash.xxh32(byte_array).hexdigest()
