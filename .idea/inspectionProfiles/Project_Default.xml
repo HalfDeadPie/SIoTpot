@@ -15,6 +15,16 @@
           <option value="Monitor.ZWaveSwitchBin" />
           <option value="Monitor.Raw" />
           <option value="Support.ZWaveReq" />
+          <option value="Controller.gnuradio_set_vars" />
+          <option value="Controller.gnuradio_get_vars" />
+          <option value="Controller.rdpcap" />
+          <option value="Transmitter.send" />
+          <option value="Responder.ZWaveSwitchBin" />
+          <option value="Responder.ZWaveReq" />
+          <option value="Controller.ZWaveSwitchBin" />
+          <option value="Transmitter.ZWaveReq" />
+          <option value="Controller.ZWaveReq" />
+          <option value="Responder.Raw" />
         </list>
       </option>
     </inspection_tool>

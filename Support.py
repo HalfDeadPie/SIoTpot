@@ -52,5 +52,18 @@ def calc_crc(frame):
     return checksum
 
 def calc_hash(frame):
+    temp_crc = frame.crc
+    del(frame.crc)
     byte_array = array('B', str(frame[ZWaveReq]))
+    frame.crc = temp_crc
     return xxhash.xxh32(byte_array).hexdigest()
+
+def show_hex(frame):
+    byte_array = array('B', str(frame[ZWaveReq]))
+    for byte in byte_array:
+        print("%x" %(byte)),
+    print '\n'
+
+def calc_length(frame):
+    byte_array = array('B', str(frame[ZWaveReq]))
+    return len(byte_array)

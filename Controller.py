@@ -1,23 +1,27 @@
 import json
+import multiprocessing
 import os
 import time
 
 from scapy.all import *
-
 
 import click
 import logging
 
 from Configuration import Configuration
 from Monitor import Monitor
+from Receiver import Receiver
+from Responder import Responder
 from TrafficGenerator import TrafficGenerator
-from CONSTANTS import MONITOR, GENERATOR, CONFIG, LOGGER, MAPPING, PREFIX, SUFFIX, NETWORKS, DECOYS, CONFIGURATION, \
-    RECEIVER_CONN, TRANSMITTER_CONN
+from CONSTANTS import *
 
+from Support import readable_value, show_hex
 from copy import copy
 from logging import Formatter
 
 from multiprocessing import Process, Pipe
+
+from Transmitter import Transmitter
 
 
 def load_json(file):
@@ -71,26 +75,6 @@ def iotpot(ctx, config):
     if not os.path.exists(configuration.networks_path):
         os.makedirs(configuration.networks_path)
 
-    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
-    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
-
-    ctx.obj[NETWORKS] = network
-    ctx.obj[DECOYS] = decoys
-
-    # monitor - generator pipe
-    monitor_conn, generator_conn = Pipe()
-    receiver_conn, transmitter_conn = Pipe()
-
-    # monitor
-    monitor = Monitor(configuration, network, decoys,
-                      iotpot_logger, monitor_conn, receiver_conn)
-    ctx.obj[MONITOR] = monitor
-
-    # generator
-    generator = TrafficGenerator(configuration, ctx.obj[NETWORKS], ctx.obj[DECOYS],
-                                 iotpot_logger, generator_conn, transmitter_conn)
-    ctx.obj[GENERATOR] = generator
-
 
 def monitor_target(monitor):
     monitor.start()
@@ -99,15 +83,16 @@ def monitor_target(monitor):
 def generator_target(generator):
     generator.start()
 
+
 def set_configuration(configuration, logger):
     config_set = False
     while not config_set:
         time.sleep(1)
         try:
             print('Trying to set...')
-            gnuradio_set_vars(center_freq = configuration.freq,
-                              samp_rate = configuration.samp_rate,
-                              tx_gain = configuration.tx)
+            gnuradio_set_vars(center_freq=configuration.freq,
+                              samp_rate=configuration.samp_rate,
+                              tx_gain=configuration.tx)
 
             if gnuradio_get_vars('center_freq') == configuration.freq:
                 logger.debug('Center frequency set: ' + str(configuration.freq) + ' Hz')
@@ -125,32 +110,62 @@ def set_configuration(configuration, logger):
 @click.pass_context
 @click.option('--passive', '-p', is_flag=True)
 def run(ctx, passive):
-    monitor = ctx.obj[MONITOR]
-    generator = ctx.obj[GENERATOR]
     configuration = ctx.obj[CONFIGURATION]
     logger = ctx.obj[LOGGER]
 
     if passive:
-        monitor.start()
+        network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
+        decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+        receiver = Receiver(configuration, network, decoys, logger, None, None)
+        monitor = Monitor(configuration, network, decoys, logger, None, receiver)
+        receiver.monitor = monitor
+        monitor.start(passive=True)
     else:
-        monitor_process = Process(target=monitor_target, args=(monitor,))
-        generator_process = Process(target=generator_target, args=(generator,))
-        configuration_process = Process(target=set_configuration, args=(configuration, logger))
+        with multiprocessing.Manager() as manager:
 
-        monitor_process.start()
-        generator_process.start()
-        configuration_process.start()
+            # load networks to shared dictionaries of manager
+            network = manager.dict(load_json(configuration.networks_path + '/' + configuration.real_networks_name))
+            decoys = manager.dict(load_json(configuration.networks_path + '/' + configuration.virtual_networks_name))
 
-        configuration_process.join()
-        monitor_process.join()
-        generator_process.join()
+            monitor_conn, generator_conn = Pipe()
+            receiver_conn, transmitter_conn = Pipe()
+
+            transmitter = Transmitter(configuration, transmitter_conn)
+            responder = Responder(transmitter, decoys, logger)
+            receiver = Receiver(configuration, network, decoys, logger, receiver_conn, responder)
+            monitor = Monitor(configuration, network, decoys, logger, monitor_conn, receiver)
+            receiver.monitor = monitor
+            generator = TrafficGenerator(configuration, network, decoys, logger, generator_conn, transmitter)
+
+            # init processes
+            monitor_process = Process(target=monitor_target, args=(monitor,))
+            configuration_process = Process(target=set_configuration, args=(configuration, logger))
+
+            # start processes
+            try:
+                configuration_process.start()
+                monitor_process.start()
+                generator.start()
+            except KeyboardInterrupt:
+                logger.info('\nTerminating...')
+                monitor_process.terminate()
+                configuration_process.terminate()
+
+            configuration_process.join()
+            monitor_process.join()
 
 
 @iotpot.command()
 @click.pass_context
 def record(ctx):
-    #load_module('gnuradio')
-    monitor = ctx.obj[MONITOR]
+    configuration = ctx.obj[CONFIGURATION]
+    logger = ctx.obj[LOGGER]
+    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
+    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+
+    receiver = Receiver(configuration, network, decoys, logger, None, None)
+    monitor = Monitor(configuration, network, decoys, logger, None, receiver)
+    receiver.monitor = monitor
     monitor.record()
 
 
@@ -160,7 +175,30 @@ def record(ctx):
 def read(ctx, file):
     frames = rdpcap(file)
     for frame in frames:
-        frame.show()
+        show_hex(frame)
+        frame[ZWaveReq].show()
+        print '\n'
+
+
+@iotpot.command()
+@click.pass_context
+@click.argument('file')
+def test_respond(ctx, file):
+    configuration = ctx.obj[CONFIGURATION]
+    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+    responder = Responder(None, decoys, None)
+    frames = rdpcap(file)
+    for frame in frames:
+        if ZWaveSwitchBin in frame:
+            cmd_class = readable_value(frame[ZWaveReq], Z_CMD_CLASS)
+            if cmd_class == CLASS_SWITCH_BINARY:
+                cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
+                if cmd == CMD_GET:
+                    frame.show()
+                    print '\nrespond:'
+                    responder.reply_report(frame)
+
+    print '..............................................................'
 
 
 if __name__ == '__main__':

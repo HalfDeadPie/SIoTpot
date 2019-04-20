@@ -8,13 +8,13 @@ from CONSTANTS import MESSAGE_RECORDS_MISSING
 
 class Monitor():
 
-    def __init__(self, configuration, network, decoys, logger, monitor_conn, receiver_conn):
+    def __init__(self, configuration, network, decoys, logger, monitor_conn, receiver):
         self.configuration = configuration
         self.logger = logger
         self.network = network
         self.decoys = decoys
         self.conn = monitor_conn
-        self.receiver = Receiver(self, configuration, self.network, self.decoys, self.logger, receiver_conn)
+        self.receiver = receiver
 
     def handle_generator(self, frame):
         self.logger.debug('Setting HomeID to configuration')
@@ -29,16 +29,16 @@ class Monitor():
             self.logger.error(MESSAGE_RECORDS_MISSING)
             sys.exit()
 
-    def start(self):
-        self.receiver.start(False)
+    def start(self, passive=False):
+        self.receiver.start(False, passive)
 
     def record(self):
         self.receiver.start(True)
 
     def build_attempt_message(self, frame):
         message = text_id(frame.homeid) + ' ' + \
-                  str(frame.src) + '->' + \
-                  str(frame.dst) + ' '
+                  str(hex(frame.src)) + '->' + \
+                  str(hex(frame.dst)) + ' '
 
         try:
             command_class = readable_value(frame[ZWaveReq], 'cmd_class')
@@ -62,13 +62,12 @@ class Monitor():
 
         return message
 
-    def analyse_frame(self, frame):
-        #self.logger.debug(self.build_attempt_message(frame))
-        if ZWaveReq in frame:
-            if ZWaveSwitchBin in frame:
-                command = readable_value(frame[ZWaveSwitchBin], 'cmd')
-                if command == "GET" or command == 'SET':
-                    self.logger.warning(self.build_attempt_message(frame))
+    # def analyse_frame(self, frame):
+    #     if ZWaveReq in frame:
+    #         if ZWaveSwitchBin in frame:
+    #             command = readable_value(frame[ZWaveSwitchBin], 'cmd')
+    #             if command == "GET" or command == 'SET':
+    #                 self.logger.warning(self.build_attempt_message(frame))
 
     def detect_attempt_replay(self, frame):
         self.logger.warning('[REPLAY] ' + self.build_attempt_message(frame))
