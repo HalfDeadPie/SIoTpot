@@ -235,7 +235,10 @@ def replicate(ctx, home_id_from, home_id_to):
 
     mapping = {}
     for decoy_from in decoys_from:
-        mapping[decoy_from] = random.choice(free_ids)
+        if decoys[home_id_from][str(decoy_from)][DEC_STATE] == DEC_STATE_CONTROLLER:
+            mapping[decoy_from] = free_ids[0]
+        else:
+            mapping[decoy_from] = random.choice(free_ids)
         free_ids.remove(mapping[decoy_from])
 
     record_frames = load_decoys_frames(configuration.records_path + '/' + home_id_from)
@@ -246,7 +249,8 @@ def replicate(ctx, home_id_from, home_id_to):
         if r.dst in mapping.keys():
             r.dst = mapping[r.dst]
 
-    record_name = 'copy_' + home_id_from + '.pcap'
+    time_text = str(time.strftime(FILE_TIME_FORMAT))
+    record_name = 'copy_' + home_id_from + '_' + time_text + RECORD_EXTENSION
 
     for from_decoy, new_decoy in mapping.iteritems():
         safe_create_dict_dict(decoys, home_id_to)

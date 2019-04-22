@@ -78,7 +78,10 @@ class Receiver():
 
         for home_id, nodelist in self.networks.iteritems():  # for all saved real nodes
             for real_node in nodelist:
-                virtual_node = random.choice(self.free_ids[home_id])  # generate random virtual ID
+                if real_node == PRIMARY_CONTROLLER:
+                    virtual_node = self.free_ids[0]
+                else:
+                    virtual_node = random.choice(self.free_ids[home_id])  # generate random virtual ID
                 self.free_ids[home_id].remove(virtual_node)  # remove it from free ID list
                 mapped_pairs[real_node] = virtual_node  # map virtual and real nodes
 
