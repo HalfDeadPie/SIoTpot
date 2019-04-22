@@ -25,17 +25,20 @@ class TrafficGenerator():
             record_files.append(self.decoys[home_id][node][DEC_RECORD])
 
         unique_records = reduce(lambda l, x: l.append(x) or l if x not in l else l, record_files, [])
-        for record_file in unique_records[0]:
-            loaded_frames = rdpcap(self.configuration.records_path + '/' + home_id + '/' + record_file)
+        for record_file in unique_records:
+            loaded_frames = rdpcap(self.configuration.records_path + '/' + home_id + '/' + record_file[0])
             for frame in loaded_frames:
                 self.records.append(frame)
 
     def start(self):
         # receive HomeID of virtual network from receiver
-        home_id = self.conn.recv()
+        if self.configuration.home_id:
+            home_id = self.configuration.home_id
+        else:
+            home_id = self.conn.recv()
         self.logger.debug('Setting HomeID for traffic generator: ' + home_id)
         self.load_decoys_frames(home_id)
         while True:
             for frame in self.records:
                 self.transmitter.send_frame(frame)
-                time.sleep(2)
+                time.sleep(1)

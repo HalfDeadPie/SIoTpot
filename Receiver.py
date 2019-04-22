@@ -5,7 +5,6 @@ import random
 import json
 
 from scapy.all import *
-from CONSTANTS import *
 from Support import *
 
 class Receiver():
@@ -154,7 +153,13 @@ class Receiver():
     # frame handlers ---------------------------------------------------------------------------------------------------
 
     def handle_passive(self, frame):
-        frame.show()
+        if ZWaveReq in frame:
+            if calc_crc(frame) == frame.crc:
+                frame.show()
+                self.map_network(frame)
+            else:
+                self.logger.debug(MESSAGE_BAD_CRC)
+
 
     def handle(self, frame):
         if ZWaveReq in frame:
@@ -166,7 +171,7 @@ class Receiver():
 
                 # decoy frame
                 if self.decoy_in_frame(frame):
-                    self.logger.debug(MESSAGE_CRC_OK + ' ' + MESSAGE_VIRTUAL)
+                    self.logger.debug(build_received_message(frame) + ' ' + MESSAGE_VIRTUAL)
                     frame_hash = calc_hash(frame)
 
                     # if sent by honeypot
@@ -179,12 +184,14 @@ class Receiver():
                         # if received duplicate
                         else:
                             self.monitor.detect_attempt_replay(frame)
-                            self.responder.respond(frame)
+                            if self.responder:
+                                self.responder.respond(frame)
 
                     # if was not sent by honeypot
                     else:
                         self.monitor.detect_attempt_modified(frame)
-                        self.responder.respond(frame)
+                        if self.responder:
+                            self.responder.respond(frame)
                 else:
                     self.logger.debug(MESSAGE_CRC_OK)
                     self.map_network(frame)

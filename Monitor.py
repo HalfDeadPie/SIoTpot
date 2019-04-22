@@ -1,6 +1,5 @@
 import sys
 
-from Receiver import Receiver
 from scapy.all import *
 from Support import *
 from CONSTANTS import MESSAGE_RECORDS_MISSING
@@ -35,43 +34,9 @@ class Monitor():
     def record(self):
         self.receiver.start(True)
 
-    def build_attempt_message(self, frame):
-        message = text_id(frame.homeid) + ' ' + \
-                  str(hex(frame.src)) + '->' + \
-                  str(hex(frame.dst)) + ' '
-
-        try:
-            command_class = readable_value(frame[ZWaveReq], 'cmd_class')
-            message += str(command_class) + ' '
-        except:
-            pass
-
-
-        try:
-            command = readable_value(frame[ZWaveSwitchBin], 'cmd')
-            message += str(command) + ' '
-        except:
-            pass
-
-
-        try:
-            payload = readable_value(frame[Raw], 'load')
-            message += str(payload)
-        except:
-            pass
-
-        return message
-
-    # def analyse_frame(self, frame):
-    #     if ZWaveReq in frame:
-    #         if ZWaveSwitchBin in frame:
-    #             command = readable_value(frame[ZWaveSwitchBin], 'cmd')
-    #             if command == "GET" or command == 'SET':
-    #                 self.logger.warning(self.build_attempt_message(frame))
-
     def detect_attempt_replay(self, frame):
-        self.logger.warning('[REPLAY] ' + self.build_attempt_message(frame))
+        self.logger.warning('[REPLAY] ' + build_received_message(frame))
 
     def detect_attempt_modified(self, frame):
-        self.logger.warning('[MODIFIED] ' + self.build_attempt_message(frame))
+        self.logger.warning('[MODIFIED] ' + build_received_message(frame))
 

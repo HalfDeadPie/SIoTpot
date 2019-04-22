@@ -48,11 +48,11 @@ FILE_TIME_FORMAT = "%Y%m%d-%H%M%S"
 RECORD_EXTENSION = '.pcap'
 
 MAPPING = {
-    'DEBUG'   : 37, # white
-    'INFO'    : 36, # cyan
-    'WARNING' : 33, # yellow
-    'ERROR'   : 31, # red
-    'CRITICAL': 41, # white on red bg
+    'DEBUG': 37,  # white
+    'INFO': 36,  # cyan
+    'WARNING': 33,  # yellow
+    'ERROR': 31,  # red
+    'CRITICAL': 41,  # white on red bg
 }
 
 PREFIX = '\033['
@@ -72,3 +72,11 @@ CLASS_SWITCH_BINARY = 'SWITCH_BINARY'
 CMD_SET = 'SET'
 CMD_GET = 'GET'
 CMD_REPORT = 'REPORT'
+
+FILE_LOGS = 'iotpot.log'
+FILE_ALERTS = 'alerts.log'
+
+WARNING_NO_REAL = 'WARNING! Mapping of real network is missing. Colision of decoys and real' \
+                  'devices can disrup real network. It is suggested to record or map real network.'
+
+ERROR_MISSING_NETWORK = 'Missing mapping of network!'

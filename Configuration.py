@@ -11,18 +11,34 @@ def parse(file):
 
 
 class Configuration():
-    def __init__(self, filepath):
+    def __init__(self, filepath, freq, samp, tx, records):
         self.home_id = None
         parser = parse(filepath)
         if parser.has_section(COMMUNICATION):
             parameters = parser[COMMUNICATION]
-            self.freq = parameters[FREQ]
-            self.samp_rate = parameters[SAMP_RATE]
-            self.tx = parameters[TX_GAIN]
+
+            # set frequency
+            if not freq:
+                self.freq = parameters[FREQ]
+            else:
+                self.freq = freq
+
+            if not samp:
+                self.samp_rate = parameters[SAMP_RATE]
+            else:
+                self.samp_rate = samp
+
+            if not tx:
+                self.tx = parameters[TX_GAIN]
+            else:
+                self.tx = tx
 
         if parser.has_section(RECORDING):
             parameters = parser[RECORDING]
-            self.records_path = parameters[RECORDS_PATH]
+            if not records:
+                self.records_path = parameters[RECORDS_PATH]
+            else:
+                self.records_path = records
 
         self.networks_path = NETWORKS_PATH
         self.real_networks_name = REAL_NETWORKS_NAME

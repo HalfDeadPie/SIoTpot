@@ -1,5 +1,3 @@
-from Support import readable_value, calc_length, calc_crc
-from CONSTANTS import *
 from Support import *
 
 class Responder:
@@ -39,9 +37,12 @@ class Responder:
 
                 if cmd == CMD_SET:
                     self.reply_ack(frame)
-                    self.reply_report(frame)
-                    self.reply_report(frame)
+                    if self.decoys[text_id(frame.homeid)][frame.dst][DEC_STATE] != DEC_STATE_CONTROLLER:
+                        self.reply_report(frame)
+                        self.reply_report(frame)
 
                 elif cmd == CMD_GET:
-                    self.reply_report(frame)
+                    self.reply_ack(frame)
+                    if self.decoys[text_id(frame.homeid)][frame.dst][DEC_STATE] != DEC_STATE_CONTROLLER:
+                        self.reply_report(frame)
 

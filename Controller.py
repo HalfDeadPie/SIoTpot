@@ -1,35 +1,37 @@
 import json
 import multiprocessing
 import os
+import random
+import shutil
 import time
-
-from scapy.all import *
+import signal
+import sys
 
 import click
 import logging
-
+from scapy.all import *
 from Configuration import Configuration
 from Monitor import Monitor
 from Receiver import Receiver
 from Responder import Responder
 from TrafficGenerator import TrafficGenerator
 from CONSTANTS import *
-
-from Support import readable_value, show_hex
+from Support import *
 from copy import copy
 from logging import Formatter
-
 from multiprocessing import Process, Pipe
-
 from Transmitter import Transmitter
 
+
+def signal_handler(sig, frame):
+    print('You pressed Ctrl+C!')
+    sys.exit(0)
 
 def load_json(file):
     if os.path.isfile(file):
         return json.load(open(file))
     else:
         return {}
-
 
 class ColoredFormatter(Formatter):
 
@@ -48,15 +50,25 @@ class ColoredFormatter(Formatter):
 
 @click.group()
 @click.pass_context
-@click.option('--config', '-c', default='config.cfg', help='Path of the auth config file.')
-def iotpot(ctx, config):
-    # logger
+@click.option('--config', '-c', default='config.cfg', help='Path of the configuration file. If no explicit parameters '
+                                                           'are set the default option is a configuration file.')
+@click.option('--freq', '-f', default=868420000, help='The frequency of the receiver and the transmitter. Default value is 868420000')
+@click.option('--samp', '-s', default=2000000, help='The sample rate of the receiver, The sample rate of '
+                                                    'the transmitter is multiplied by 10x. Default value is 2000000')
+@click.option('--tx', '-t', default=25, help='TX gain of the transmitter. Default value is 25')
+@click.option('--records', '-r', default='records', help='The path of the records. Default value is records and it is '
+                                                         'recommended not to change.')
+def iotpot(ctx, config, freq, samp, tx, records):
+    """IoTpot is the IoT honeypot, that is compatible with SDR dongle and HackRF One. SDR dongle is used as a receiver
+     and HackRF one is used as a transmitter."""
     iotpot_logger = logging.getLogger('iotpot')
     iotpot_logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('iotpot.log')
+    fh = logging.FileHandler(FILE_LOGS)
     fh.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
+    ah = logging.FileHandler(FILE_ALERTS)
+    ah.setLevel(logging.WARNING)
     my_formatter = logging.Formatter('%(asctime)-15s %(levelname)s: %(message)s')
     cf = ColoredFormatter('%(asctime)-15s %(levelname)s: %(message)s')
     fh.setFormatter(my_formatter)
@@ -68,7 +80,7 @@ def iotpot(ctx, config):
     # monitor object always
     ctx.obj[CONFIG] = config
     config_file = ctx.obj['config']
-    configuration = Configuration(config_file)
+    configuration = Configuration(config_file, freq, samp, tx, records)
     ctx.obj[CONFIGURATION] = configuration
 
     # persistent networks and decoys information
@@ -76,12 +88,12 @@ def iotpot(ctx, config):
         os.makedirs(configuration.networks_path)
 
 
-def monitor_target(monitor):
-    monitor.start()
-
-
 def generator_target(generator):
     generator.start()
+
+
+def monitor_target(monitor):
+    monitor.start()
 
 
 def set_configuration(configuration, logger):
@@ -102,36 +114,53 @@ def set_configuration(configuration, logger):
                 logger.debug('TX gain set: ' + str(configuration.tx) + 'db')
 
             config_set = True
-        except:
-            pass
+        except Exception as e:
+            print e
 
 
 @iotpot.command()
 @click.pass_context
-@click.option('--passive', '-p', is_flag=True)
-def run(ctx, passive):
+@click.option('--passive', '-p', is_flag=True, help='Passive mode of the IoThoneypot disable any transmitting and allows'
+                                                    'displaying all received frames.')
+@click.option('--low', '-l', is_flag=True, help='Low-level mode of interaction disables responding, but the traffic is still generated.')
+@click.argument('home_id', required=False)
+def run(ctx, passive, low, home_id):
+    """Run the main functionality of the IoT honeypot. The best practice is to to record Z-Wave frames from real
+    Z-Wave home network to ensure creating a virtual decoys."""
     configuration = ctx.obj[CONFIGURATION]
+    configuration.home_id = home_id
     logger = ctx.obj[LOGGER]
 
     if passive:
+        signal.signal(signal.SIGINT, signal_handler)
         network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
         decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+
         receiver = Receiver(configuration, network, decoys, logger, None, None)
         monitor = Monitor(configuration, network, decoys, logger, None, receiver)
         receiver.monitor = monitor
+
+        configuration_process = Process(target=set_configuration, args=(configuration, logger))
+        configuration_process.start()
+
         monitor.start(passive=True)
+
     else:
         with multiprocessing.Manager() as manager:
 
             # load networks to shared dictionaries of manager
             network = manager.dict(load_json(configuration.networks_path + '/' + configuration.real_networks_name))
             decoys = manager.dict(load_json(configuration.networks_path + '/' + configuration.virtual_networks_name))
+            signal.signal(signal.SIGINT, signal_handler)
 
             monitor_conn, generator_conn = Pipe()
             receiver_conn, transmitter_conn = Pipe()
 
             transmitter = Transmitter(configuration, transmitter_conn)
-            responder = Responder(transmitter, decoys, logger)
+            if not low:
+                responder = Responder(transmitter, decoys, logger)
+            else:
+                responder = None
             receiver = Receiver(configuration, network, decoys, logger, receiver_conn, responder)
             monitor = Monitor(configuration, network, decoys, logger, monitor_conn, receiver)
             receiver.monitor = monitor
@@ -158,6 +187,7 @@ def run(ctx, passive):
 @iotpot.command()
 @click.pass_context
 def record(ctx):
+    """Records frames from real Z-Wave network and prepare set of decoys."""
     configuration = ctx.obj[CONFIGURATION]
     logger = ctx.obj[LOGGER]
     network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
@@ -167,6 +197,96 @@ def record(ctx):
     monitor = Monitor(configuration, network, decoys, logger, None, receiver)
     receiver.monitor = monitor
     monitor.record()
+
+@iotpot.command()
+@click.pass_context
+@click.argument('home_id_from')
+@click.argument('home_id_to', required=False)
+def replicate(ctx, home_id_from, home_id_to):
+    configuration = ctx.obj[CONFIGURATION]
+    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
+    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+
+    if not home_id_to:
+        home_id_to = home_id_from
+
+    safe_create_dir(configuration.records_path + '/' + home_id_to)
+
+    if home_id_from in decoys:
+        decoys_from = decoys[home_id_from].keys()
+        decoys_from = [int(x) for x in decoys_from]
+    else:
+        sys.exit(ERROR_MISSING_NETWORK)
+
+    if home_id_to in network.keys():
+        real_nodes_to = network[home_id_to]
+    else:
+        real_nodes_to = []
+        print '\n' + WARNING_NO_REAL + '\n'
+
+    if home_id_to in decoys:
+        decoys_to = decoys[home_id_to].keys()
+        decoys_to = [int(x) for x in decoys_to]
+    else:
+        decoys_to = []
+
+    all_nodes_to = real_nodes_to + decoys_to
+    free_ids = list_free_ids(all_nodes_to)
+
+    mapping = {}
+    for decoy_from in decoys_from:
+        mapping[decoy_from] = random.choice(free_ids)
+        free_ids.remove(mapping[decoy_from])
+
+    record_frames = load_decoys_frames(configuration.records_path + '/' + home_id_from)
+
+    for r in record_frames:
+        if r.src in mapping.keys():
+            r.src = mapping[r.src]
+        if r.dst in mapping.keys():
+            r.dst = mapping[r.dst]
+
+    record_name = 'copy_' + home_id_from + '.pcap'
+
+    for from_decoy, new_decoy in mapping.iteritems():
+        safe_create_dict_dict(decoys, home_id_to)
+        safe_create_dict_dict(decoys[home_id_to], str(new_decoy))
+        safe_create_dict_list(decoys[home_id_to][str(new_decoy)], DEC_RECORD)
+        safe_append(decoys[home_id_to][str(new_decoy)][DEC_RECORD], record_name)
+        if decoys[home_id_from][str(from_decoy)][DEC_STATE] == DEC_STATE_CONTROLLER:
+            decoys[home_id_to][str(new_decoy)][DEC_STATE] = unicode(DEC_STATE_CONTROLLER)
+        else:
+            decoys[home_id_to][str(new_decoy)][DEC_STATE] = unicode(DEC_STATE_OFF)
+
+    wrpcap(configuration.records_path + '/' + home_id_to + '/' + record_name, record_frames)
+    if decoys:
+        json.dump(decoys,
+                  open(configuration.networks_path + '/' +
+                       configuration.virtual_networks_name, 'w'))
+
+
+@iotpot.command()
+@click.pass_context
+def status(ctx):
+    configuration = ctx.obj[CONFIGURATION]
+    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
+    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+
+    for home_id, network_dict in decoys.iteritems():
+        print home_id + ' . . . . . . . . . . . . . . . . '
+        if home_id in network.keys():
+            print '\tnodes:\t',
+            for n in network[home_id]:
+                print str(n) + ' ',
+
+            print ''
+
+        print '\tdecoys:'
+        for decoy, decoy_status in network_dict.iteritems():
+            print '\t\t' + str(decoy) + '\t'
+            for record in decoy_status[DEC_RECORD]:
+                print '\t\t\t' + record
+        print ''
 
 
 @iotpot.command()
@@ -199,6 +319,28 @@ def test_respond(ctx, file):
                     responder.reply_report(frame)
 
     print '..............................................................'
+
+
+@iotpot.command()
+@click.pass_context
+def reset(ctx):
+    configuration = ctx.obj[CONFIGURATION]
+
+    # remove records
+    try:
+        records = [ f for f in os.listdir(configuration.records_path) ]
+        for f in records:
+            shutil.rmtree(configuration.records_path + '/' + f)
+    except:
+        pass
+
+    try:
+        networks = [f for f in os.listdir(configuration.networks_path)]
+        for f in networks:
+            os.remove(os.path.join(configuration.networks_path, f))
+    except Exception as e:
+        print e
+
 
 
 if __name__ == '__main__':
