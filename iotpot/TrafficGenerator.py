@@ -5,7 +5,8 @@ from scapy.layers.ZWave import *
 
 from Transmitter import Transmitter
 
-from CONSTANTS import DEC_RECORD, SEQN_RANGE
+from Support import *
+from CONSTANTS import *
 
 class TrafficGenerator():
 
@@ -29,6 +30,20 @@ class TrafficGenerator():
             loaded_frames = rdpcap(self.configuration.records_path + '/' + home_id + '/' + record_file[0])
             for frame in loaded_frames:
                 self.records.append(frame)
+
+    def is_set(self, frame):
+        try:
+            if ZWaveSwitchBin in frame:
+                cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
+
+                if cmd == CMD_SET:
+                    return True
+                else:
+                    return False
+
+        except Exception as e:
+            pass
+
 
     def start(self):
         # receive HomeID of virtual network from receiver

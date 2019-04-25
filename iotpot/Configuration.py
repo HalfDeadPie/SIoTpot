@@ -1,6 +1,6 @@
 import configparser
 from CONSTANTS import COMMUNICATION, TX_GAIN, FREQ, SAMP_RATE, RECORDING, RECORDS_PATH, \
-    NETWORKS_PATH, REAL_NETWORKS_NAME, VIRTUAL_NETWORKS_NAME
+    NETWORKS, REAL_NETWORKS_NAME, VIRTUAL_NETWORKS_NAME
 
 
 def parse(file):
@@ -11,7 +11,7 @@ def parse(file):
 
 
 class Configuration():
-    def __init__(self, filepath, freq, samp, tx, records):
+    def __init__(self, filepath, freq, samp, tx, records, networks):
         self.home_id = None
         parser = parse(filepath)
         if parser.has_section(COMMUNICATION):
@@ -40,6 +40,12 @@ class Configuration():
             else:
                 self.records_path = records
 
-        self.networks_path = NETWORKS_PATH
+        if parser.has_section(NETWORKS):
+            parameters = parser[NETWORKS]
+            if not networks:
+                self.networks_path = parameters[NETWORKS]
+            else:
+                self.networks_path = networks
+
         self.real_networks_name = REAL_NETWORKS_NAME
         self.virtual_networks_name = VIRTUAL_NETWORKS_NAME

@@ -3,7 +3,7 @@ COMMUNICATION = 'communication'
 RECORDING = 'recording'
 RECORDS_PATH = 'records_path'
 
-NETWORKS_PATH = 'networks'
+NETWORKS = 'networks'
 REAL_NETWORKS_NAME = 'real_networks.json'
 VIRTUAL_NETWORKS_NAME = 'virtual_networks.json'
 

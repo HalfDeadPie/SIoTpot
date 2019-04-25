@@ -32,17 +32,21 @@ class Responder:
 
     def respond(self, frame):
         if ZWaveSwitchBin in frame:
-            if readable_value(frame, Z_CMD_CLASS) == CLASS_SWITCH_BINARY:
-                cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
+            try:
+                if readable_value(frame, Z_CMD_CLASS) == CLASS_SWITCH_BINARY:
+                    cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
 
-                if cmd == CMD_SET:
-                    self.reply_ack(frame)
-                    if self.decoys[text_id(frame.homeid)][frame.dst][DEC_STATE] != DEC_STATE_CONTROLLER:
-                        self.reply_report(frame)
-                        self.reply_report(frame)
+                    if cmd == CMD_SET:
+                        self.reply_ack(frame)
+                        if self.decoys[text_id(frame.homeid)][frame.dst][DEC_STATE] != DEC_STATE_CONTROLLER:
+                            self.reply_report(frame)
+                            self.reply_report(frame)
+                            self.logger.debug('Responding ACK, REPORT')
 
-                elif cmd == CMD_GET:
-                    self.reply_ack(frame)
-                    if self.decoys[text_id(frame.homeid)][frame.dst][DEC_STATE] != DEC_STATE_CONTROLLER:
-                        self.reply_report(frame)
+                    elif cmd == CMD_GET:
+                        self.reply_ack(frame)
+                        if self.decoys[text_id(frame.homeid)][frame.dst][DEC_STATE] != DEC_STATE_CONTROLLER:
+                            self.reply_report(frame)
+            except:
+                pass
 
