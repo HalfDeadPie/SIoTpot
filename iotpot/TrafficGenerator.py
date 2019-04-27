@@ -26,6 +26,14 @@ class TrafficGenerator():
             record_files.append(self.decoys[home_id][node][DEC_RECORD])
 
         unique_records = reduce(lambda l, x: l.append(x) or l if x not in l else l, record_files, [])
+
+        if len(unique_records) == 0:
+            self.transmitter.send_exit()
+            time.sleep(0.3)
+            self.logger.error(ERROR_NO_GENERATED_TRAFFIC + home_id)
+            self.logger.info(EXIT_TRAFFIC_GENERATOR)
+            sys.exit()
+
         for record_file in unique_records:
             loaded_frames = rdpcap(self.configuration.records_path + '/' + home_id + '/' + record_file[0])
             for frame in loaded_frames:

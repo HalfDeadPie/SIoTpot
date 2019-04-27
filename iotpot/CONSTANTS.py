@@ -14,8 +14,11 @@ ZWAVE = 'Zwave'
 PRIMARY_CONTROLLER = 1
 
 NETWORKS = 'networks'
+NETWORKS_PATH = 'networks_path'
 DECOYS = 'decoys'
 CTX_HOME_ID = 'homeid'
+
+LOGGING = 'logging'
 
 SEQN_RANGE = 255
 
@@ -37,7 +40,7 @@ SENT_Q_SIZE = 10
 
 LOGGER = 'iotpot_logger'
 
-MESSAGE_BAD_CRC = 'Bad CRC'
+MESSAGE_BAD_CRC = '[INVALID]'
 MESSAGE_CRC_OK = 'CRC OK'
 MESSAGE_RECORDS_MISSING = 'Decoys for this network are missing. Please, start recording them using a command "record"'
 MESSAGE_VIRTUAL = '[VIRTUAL]'
@@ -76,7 +79,29 @@ CMD_REPORT = 'REPORT'
 FILE_LOGS = 'iotpot.log'
 FILE_ALERTS = 'alerts.log'
 
+INFO_NEW_REAL = 'New device has been found: '
+
 WARNING_NO_REAL = 'WARNING! Mapping of real network is missing. Colision of decoys and real' \
                   'devices can disrup real network. It is suggested to record or map real network.'
 
 ERROR_MISSING_NETWORK = 'Missing mapping of network!'
+ERROR_MISSING_RECORD_PATH = 'Missing path to records! Please, use the configuration file or the option'
+ERROR_MISSING_NETWORK_PATH = 'Missing path to networks! Please, use the configuration file or the option'
+ERROR_MISSING_LOGGING_PATH = 'Missing path for a logging file! Please, use the configuration file or the option'
+ERROR_MISSING_ALERTS_PATH = 'Missing path for a alerts file! Please, use the configuration file or the option'
+ERROR_NO_GENERATED_TRAFFIC = 'Missing records for '
+
+EXIT_TRAFFIC_GENERATOR = 'TERMINATING TRANSMITTING PROCESS'
+EXIT_RECEIVER_GENERATOR = 'TERMINATING RECEIVING PROCESS'
+
+EXIT = 'exit'
+
+
+LOGGING_PATH = 'logging_path'
+ALERTS_PATH = 'alerts_path'
+LOGGING_FILE = 'iotpot.log'
+ALERTS_FILE = 'alerts.log'
+
+DEF_SAMP = 2000000
+DEF_FREQ = 868420000
+DEF_TX = 25

@@ -1,6 +1,7 @@
+import sys
+
 import configparser
-from CONSTANTS import COMMUNICATION, TX_GAIN, FREQ, SAMP_RATE, RECORDING, RECORDS_PATH, \
-    NETWORKS, REAL_NETWORKS_NAME, VIRTUAL_NETWORKS_NAME
+from CONSTANTS import *
 
 
 def parse(file):
@@ -11,41 +12,84 @@ def parse(file):
 
 
 class Configuration():
-    def __init__(self, filepath, freq, samp, tx, records, networks):
+    def __init__(self, filepath, freq, samp, tx, records, networks, logging_file, alerts_file):
         self.home_id = None
         parser = parse(filepath)
+
+        # COMMUNICATION PARAMETERS -------------------------------------------------------------------------------------
+
         if parser.has_section(COMMUNICATION):
             parameters = parser[COMMUNICATION]
 
             # set frequency
             if not freq:
-                self.freq = parameters[FREQ]
+                try:
+                    self.freq = parameters[FREQ]
+                except:
+                    self.freq = DEF_FREQ
             else:
                 self.freq = freq
 
             if not samp:
-                self.samp_rate = parameters[SAMP_RATE]
+                try:
+                    self.samp_rate = parameters[SAMP_RATE]
+                except:
+                    self.samp_rate = DEF_SAMP
             else:
                 self.samp_rate = samp
 
             if not tx:
-                self.tx = parameters[TX_GAIN]
+                try:
+                    self.tx = parameters[TX_GAIN]
+                except:
+                    self.tx = DEF_TX
             else:
                 self.tx = tx
+
+
+
 
         if parser.has_section(RECORDING):
             parameters = parser[RECORDING]
             if not records:
-                self.records_path = parameters[RECORDS_PATH]
+                try:
+                    self.records_path = parameters[RECORDS_PATH]
+                except:
+                    sys.exit(ERROR_MISSING_RECORD_PATH)
             else:
                 self.records_path = records
+
 
         if parser.has_section(NETWORKS):
             parameters = parser[NETWORKS]
             if not networks:
-                self.networks_path = parameters[NETWORKS]
+                try:
+                    self.networks_path = parameters[NETWORKS_PATH]
+                except:
+                    sys.exit(ERROR_MISSING_NETWORK_PATH)
             else:
                 self.networks_path = networks
+
+
+
+
+        if parser.has_section(LOGGING):
+            parameters = parser[LOGGING]
+            if not logging_file:
+                try:
+                    self.logging_file = parameters[LOGGING_PATH] + LOGGING_FILE
+                except:
+                    sys.exit(ERROR_MISSING_LOGGING_PATH)
+            else:
+                self.logging_file = logging_file
+
+            if not alerts_file:
+                try:
+                    self.alerts_file = parameters[ALERTS_PATH] + ALERTS_FILE
+                except:
+                    sys.exit(ERROR_MISSING_ALERTS_PATH)
+            else:
+                self.alerts_file = logging_file
 
         self.real_networks_name = REAL_NETWORKS_NAME
         self.virtual_networks_name = VIRTUAL_NETWORKS_NAME

@@ -1,4 +1,5 @@
 import collections
+import sys
 import threading
 import time
 import random
@@ -68,9 +69,14 @@ class Receiver():
         safe_create_dict_list(self.networks, home_id)
         network = self.networks[home_id]
 
+        if src not in self.networks[home_id]:
+            self.logger.info(INFO_NEW_REAL + str(src))
+            safe_append(network, src)
+
         # append new nodes if doesnt exists in networks
-        safe_append(network, src)
-        safe_append(network, dst)
+        if dst not in self.networks[home_id]:
+            self.logger.info(INFO_NEW_REAL + str(dst))
+            safe_append(network, dst)
 
     def virtualize_and_save_record(self, frame_list, directory):
         mapped_pairs = {}
@@ -120,6 +126,9 @@ class Receiver():
         while True:
             if self.conn.poll():
                 frame_hash = self.conn.recv()
+                if frame_hash == EXIT:
+                    self.logger.info(EXIT_RECEIVER_GENERATOR)
+                    sys.exit()
                 self.decoy_frames_out.appendleft(frame_hash)
             else:
                 pass
@@ -153,53 +162,71 @@ class Receiver():
 
         self.save_networks()  # always save networks and decoys
 
+    def add_device(self, home_id):
+        sniffradio(radio=ZWAVE, prn=lambda frame: self.new_device_handler(home_id, frame))
+
     # frame handlers ---------------------------------------------------------------------------------------------------
+
+    def new_device_handler(self, home_id, frame):
+        if ZWaveReq in frame:
+            if calc_crc(frame) == frame.crc:
+                if home_id == text_id(frame.homeid) or not home_id:
+                    frame.show()
+                    self.map_network(frame)
+                    self.remove_duplicate_decoys(frame)
+                    self.save_networks()
+
 
     def handle_passive(self, frame):
         if ZWaveReq in frame:
             if calc_crc(frame) == frame.crc:
                 frame.show()
-                self.map_network(frame)
+                #self.map_network(frame)
             else:
                 self.logger.debug(MESSAGE_BAD_CRC)
 
 
     def handle(self, frame):
         if ZWaveReq in frame:
-            if calc_crc(frame) == frame.crc:
+            if same_home_id(frame, self.configuration.home_id):
+                if calc_crc(frame) == frame.crc:
 
-                # only first message to stick on Home ID
-                if not self.configuration.home_id:
-                    self.monitor.handle_generator(frame)
+                        # only first message to stick on Home ID
+                        if not self.configuration.home_id:
+                            self.monitor.handle_generator(frame)
 
-                # decoy frame
-                if self.decoy_in_frame(frame):
-                    self.logger.debug(build_received_message(frame) + ' ' + MESSAGE_VIRTUAL)
-                    frame_hash = calc_hash(frame)
+                        # decoy frame
+                        if self.decoy_in_frame(frame):
+                            self.logger.debug(build_received_message(frame) + ' ' + MESSAGE_VIRTUAL)
+                            frame_hash = calc_hash(frame)
 
-                    # if sent by honeypot
-                    if frame_hash in self.decoy_frames_out:
+                            # if sent by honeypot
+                            if frame_hash in self.decoy_frames_out:
 
-                        # if not received yet
-                        if frame_hash not in self.decoy_frames_in:
-                            self.decoy_frames_in.appendleft(frame)
+                                # if not received yet
+                                if frame_hash not in self.decoy_frames_in:
+                                    self.decoy_frames_in.appendleft(frame)
 
-                        # if received duplicate
+                                # if received duplicate
+                                else:
+                                    self.monitor.detect_attempt_replay(frame)
+                                    if self.responder:
+                                        self.responder.respond(frame)
+
+                            # if was not sent by honeypot
+                            else:
+                                self.monitor.detect_attempt_modified(frame)
+                                if self.responder:
+                                    self.responder.respond(frame)
                         else:
-                            self.monitor.detect_attempt_replay(frame)
-                            if self.responder:
-                                self.responder.respond(frame)
-
-                    # if was not sent by honeypot
-                    else:
-                        self.monitor.detect_attempt_modified(frame)
-                        if self.responder:
-                            self.responder.respond(frame)
+                            self.logger.debug(MESSAGE_CRC_OK)
+                            #self.map_network(frame)
                 else:
-                    self.logger.debug(MESSAGE_CRC_OK)
-                    self.map_network(frame)
-            else:
-                self.logger.debug(MESSAGE_BAD_CRC)
+                    self.logger.debug(build_received_message(frame) + ' ' + MESSAGE_BAD_CRC)
+                    self.monitor.detect_invalid_frame(frame)
+                    if self.responder:
+                        self.responder.respond(frame)
+
 
     def record(self, frame):
         if ZWaveReq in frame:

@@ -26,11 +26,13 @@ def signal_handler(sig, frame):
     print('You pressed Ctrl+C!')
     sys.exit(0)
 
+
 def load_json(file):
     if os.path.isfile(file):
         return json.load(open(file))
     else:
         return {}
+
 
 class ColoredFormatter(Formatter):
 
@@ -50,25 +52,30 @@ class ColoredFormatter(Formatter):
 @click.group()
 @click.option('--config', '-c', default='config.cfg', help='Path of the configuration file. If no explicit parameters '
                                                            'are set the default option is a configuration file.')
-@click.option('--freq', '-f', default=868420000, help='The frequency of the receiver and the transmitter. Default value is 868420000')
-@click.option('--samp', '-s', default=2000000, help='The sample rate of the receiver, The sample rate of '
-                                                    'the transmitter is multiplied by 10x. Default value is 2000000')
-@click.option('--tx', '-t', default=25, help='TX gain of the transmitter. Default value is 25')
-@click.option('--records', '-r', default='records', help='The path of the records. Default value is records.')
-@click.option('--networks', '-n', default='networks', help='The path of the networks. Default value is networks.')
-@click.option('--log', '-l', default='iotpot.log', help='Path to a logging file')
-@click.option('--alerts', '-a', default='alerts.log', help='Path to a alert logging file')
+@click.option('--freq', '-f', help='The frequency of the receiver and the transmitter. Default value is 868420000')
+@click.option('--samp', '-s', help='The sample rate of the receiver, The sample rate of '
+                                   'the transmitter is multiplied by 10x. Default value is 2000000')
+@click.option('--tx', '-t', help='TX gain of the transmitter. Default value is 25')
+@click.option('--records', '-r', help='The path of the records. Default value is records.')
+@click.option('--networks', '-n', help='The path of the networks. Default value is networks.')
+@click.option('--log', '-l', help='Path to a logging file')
+@click.option('--alerts', '-a', help='Path to a alert logging file')
 @click.pass_context
 def iotpot(ctx, config, freq, samp, tx, records, networks, log, alerts):
     """IoTpot is the IoT honeypot, that is compatible with SDR dongle and HackRF One. SDR dongle is used as a receiver
      and HackRF one is used as a transmitter."""
+    ctx.obj[CONFIG] = config
+    config_file = ctx.obj['config']
+    configuration = Configuration(config_file, freq, samp, tx, records, networks, log, alerts)
+    ctx.obj[CONFIGURATION] = configuration
+
     iotpot_logger = logging.getLogger('iotpot')
     iotpot_logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler(log)
+    fh = logging.FileHandler(configuration.logging_file)
     fh.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
-    ah = logging.FileHandler(alerts)
+    ah = logging.FileHandler(configuration.alerts_file)
     ah.setLevel(logging.WARNING)
     my_formatter = logging.Formatter('%(asctime)-15s %(levelname)s: %(message)s')
     cf = ColoredFormatter('%(asctime)-15s %(levelname)s: %(message)s')
@@ -79,11 +86,6 @@ def iotpot(ctx, config, freq, samp, tx, records, networks, log, alerts):
     iotpot_logger.addHandler(ah)
     ctx.obj[LOGGER] = iotpot_logger
 
-    # monitor object always
-    ctx.obj[CONFIG] = config
-    config_file = ctx.obj['config']
-    configuration = Configuration(config_file, freq, samp, tx, records, networks)
-    ctx.obj[CONFIGURATION] = configuration
 
     # persistent networks and decoys information
     if not os.path.exists(configuration.networks_path):
@@ -109,11 +111,11 @@ def set_configuration(configuration, logger):
                               tx_gain=configuration.tx)
 
             if gnuradio_get_vars('center_freq') == configuration.freq:
-                logger.debug('Center frequency set: ' + str(configuration.freq) + ' Hz')
+                logger.info('Center frequency set: ' + str(configuration.freq) + ' Hz')
             if gnuradio_get_vars('samp_rate') == configuration.samp_rate:
-                logger.debug('Sample rate set: ' + str(configuration.samp_rate) + ' Hz')
+                logger.info('Sample rate set: ' + str(configuration.samp_rate) + ' Hz')
             if gnuradio_get_vars('tx_gain') == configuration.tx:
-                logger.debug('TX gain set: ' + str(configuration.tx) + 'db')
+                logger.info('TX gain set: ' + str(configuration.tx) + 'db')
 
             config_set = True
         except Exception as e:
@@ -122,9 +124,11 @@ def set_configuration(configuration, logger):
 
 @iotpot.command()
 @click.pass_context
-@click.option('--passive', '-p', is_flag=True, help='Passive mode of the IoThoneypot disable any transmitting and allows'
-                                                    'displaying all received frames.')
-@click.option('--low', '-l', is_flag=True, help='Low-level mode of interaction disables responding, but the traffic is still generated.')
+@click.option('--passive', '-p', is_flag=True,
+              help='Passive mode of the IoThoneypot disable any transmitting and allows'
+                   'displaying all received frames.')
+@click.option('--low', '-l', is_flag=True,
+              help='Low-level mode of interaction disables responding, but the traffic is still generated.')
 @click.argument('home_id', required=False)
 def run(ctx, passive, low, home_id):
     """Run the main functionality of the IoT honeypot. The best practice is to to record Z-Wave frames from real
@@ -199,6 +203,35 @@ def record(ctx):
     monitor = Monitor(configuration, network, decoys, logger, None, receiver)
     receiver.monitor = monitor
     monitor.record()
+
+
+@iotpot.command()
+@click.pass_context
+@click.argument('home_id', required=False)
+def add(ctx, home_id):
+    configuration = ctx.obj[CONFIGURATION]
+    configuration.home_id = home_id
+    logger = ctx.obj[LOGGER]
+    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
+    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+    receiver = Receiver(configuration, network, decoys, logger, None, None)
+    receiver.add_device(home_id)
+
+
+@iotpot.command()
+@click.pass_context
+@click.argument('home_id')
+@click.argument('node_id')
+def delete(ctx, home_id, node_id):
+    configuration = ctx.obj[CONFIGURATION]
+    configuration.home_id = home_id
+    logger = ctx.obj[LOGGER]
+    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
+    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+    records_to_delete = remove_duplicate_decoys(home_id, node_id, decoys, configuration)
+    remove_unrecorded_decoys(decoys, home_id, records_to_delete)
+    save_networks(configuration, network, decoys)
+
 
 @iotpot.command()
 @click.pass_context
@@ -334,7 +367,7 @@ def reset(ctx):
 
     # remove records
     try:
-        records = [ f for f in os.listdir(configuration.records_path) ]
+        records = [f for f in os.listdir(configuration.records_path)]
         for f in records:
             shutil.rmtree(configuration.records_path + '/' + f)
     except:
@@ -346,7 +379,6 @@ def reset(ctx):
             os.remove(os.path.join(configuration.networks_path, f))
     except Exception as e:
         print e
-
 
 
 if __name__ == '__main__':

@@ -1,4 +1,6 @@
+import json
 import os
+import time
 from array import array
 from scapy.all import *
 import xxhash
@@ -49,7 +51,6 @@ def calc_crc(frame):
     iterator = 0
     for byte in byte_array:
         checksum ^= byte
-        # print("%d: %x" % (iterator, byte))
         iterator += 1
 
     return checksum
@@ -119,3 +120,63 @@ def load_decoys_frames(path):
             records.append(frame)
 
     return records
+
+
+def remove_duplicate_decoys(home_id, node_id, decoys, configuration):
+    decoys_list = list(decoys[home_id].keys())
+
+    # if node id found in decoys, delete it and its records
+    if str(node_id) in decoys_list:
+        print 'deleting'
+        records_to_delete = decoys[home_id][node_id][DEC_RECORD]
+        delete_record(records_to_delete, home_id, configuration)
+        del (decoys[home_id][node_id])
+        return records_to_delete
+    else:
+        return None
+
+
+def delete_record(records, home_id, configuration):
+    for record in records:
+        os.remove(configuration.records_path + '/' + home_id + '/' + record)
+
+
+def save_networks(configuration, networks, decoys):
+    time.sleep(0.3)
+    n_to_save = networks.copy()
+    d_to_save = decoys.copy()
+
+    if n_to_save:
+        json.dump(n_to_save,
+                  open(configuration.networks_path + '/' +
+                       configuration.real_networks_name, 'w'))
+    if d_to_save:
+        json.dump(d_to_save,
+                  open(configuration.networks_path + '/' +
+                       configuration.virtual_networks_name, 'w'))
+
+
+def remove_unrecorded_decoys(decoys, home_id, records_to_delete):
+    for node_id, info in decoys[home_id].iteritems():
+        for rec in records_to_delete:
+            safe_remove(info[DEC_RECORD], rec)
+
+    nodes = decoys[home_id].keys()
+    for node in nodes:
+        if len(decoys[home_id][node][DEC_RECORD]) == 0:
+            del (decoys[home_id][node])
+
+
+def same_home_id(frame, home_id):
+    return str(hex(frame.homeid)) == str(home_id)
+
+
+def is_dst_decoy(frame, decoys):
+    home_id = text_id(frame.homeid)
+    dst = str(frame.dst)
+    decoy_list = decoys[home_id].keys()
+
+    if dst in decoy_list:
+        return True
+    else:
+        return False

@@ -23,3 +23,6 @@ class Transmitter():
 
         self.conn.send(calc_hash(frame))
         send(frame, verbose=False)
+
+    def send_exit(self):
+        self.conn.send(EXIT)
