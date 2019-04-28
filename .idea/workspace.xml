@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d2bfd4b9-90aa-4fc5-8f5d-516ef0678cc3" name="Default Changelist" comment="Last: (FIX) Removing records and corresponding nodes&#10;&#10;TODO:&#10;Bad CRC detection testing&#10;Origin Network Records&#10;Global testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package">
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+    <list default="true" id="d2bfd4b9-90aa-4fc5-8f5d-516ef0678cc3" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/CONSTANTS.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/CONSTANTS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/Controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/Monitor.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Monitor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/Receiver.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Receiver.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/Support.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Support.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -23,8 +15,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/iotpot/Controller.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="627">
-              <caret line="369" column="19" lean-forward="true" selection-start-line="369" selection-start-column="19" selection-end-line="369" selection-end-column="19" />
+            <state relative-caret-position="235">
+              <caret line="381" column="8" lean-forward="true" selection-start-line="381" selection-start-column="8" selection-end-line="381" selection-end-column="8" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
                 <element signature="e#855#1194#0" />
@@ -360,7 +352,7 @@
       <workItem from="1556268411659" duration="14286000" />
       <workItem from="1556311622996" duration="3274000" />
       <workItem from="1556354278889" duration="21435000" />
-      <workItem from="1556442375704" duration="10304000" />
+      <workItem from="1556442375704" duration="10551000" />
     </task>
     <task id="LOCAL-00001" summary="TODO:&#10;Responder&#10;&#10;Bug:&#10;Saving virtual nodes to real network file&#10;Adding config, records and networks as a example[?]&#10;&#10;Working on:&#10;Traffic generator - now is just simple cyclic transmitting pcap files from records&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC">
       <created>1555028750309</created>
@@ -418,17 +410,23 @@
       <option name="project" value="LOCAL" />
       <updated>1556403797255</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Last: Default network records and BAD CRC logging&#10;&#10;TODO:&#10;Global testing&#10;README&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package">
+      <created>1556456845800</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1556456845800</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="326595000" />
+    <option name="totallyTimeSpent" value="326842000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="57" y="1020" width="1863" height="1084" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.23115025" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.23115025" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -441,7 +439,7 @@
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" />
       <window_info anchor="bottom" id="Database Changes" order="9" />
-      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
+      <window_info active="true" anchor="bottom" id="Event Log" order="10" side_tool="true" visible="true" weight="0.32925585" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.32925585" />
       <window_info anchor="bottom" id="Python Console" order="12" />
       <window_info anchor="bottom" id="Concurrent Activities Diagram" order="13" weight="0.32925585" />
@@ -491,18 +489,8 @@
     <MESSAGE value="FIX:&#10;Decoy controllers IDs&#10;Record copies names" />
     <MESSAGE value="Last: Package&#10;&#10;TODO&#10;Testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
     <MESSAGE value="Last: (FIX) Removing records and corresponding nodes&#10;&#10;TODO:&#10;Bad CRC detection testing&#10;Origin Network Records&#10;Global testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
-    <option name="LAST_COMMIT_MESSAGE" value="Last: (FIX) Removing records and corresponding nodes&#10;&#10;TODO:&#10;Bad CRC detection testing&#10;Origin Network Records&#10;Global testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/iotpot/Controller.py</url>
-          <line>384</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <MESSAGE value="Last: Default network records and BAD CRC logging&#10;&#10;TODO:&#10;Global testing&#10;README&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
+    <option name="LAST_COMMIT_MESSAGE" value="Last: Default network records and BAD CRC logging&#10;&#10;TODO:&#10;Global testing&#10;README&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/IoT_Honeypot$Monitor.coverage" NAME="Monitor Coverage Results" MODIFIED="1554990330327" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -665,8 +653,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/iotpot/Controller.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="627">
-          <caret line="369" column="19" lean-forward="true" selection-start-line="369" selection-start-column="19" selection-end-line="369" selection-end-column="19" />
+        <state relative-caret-position="235">
+          <caret line="381" column="8" lean-forward="true" selection-start-line="381" selection-start-column="8" selection-end-line="381" selection-end-column="8" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
             <element signature="e#855#1194#0" />
