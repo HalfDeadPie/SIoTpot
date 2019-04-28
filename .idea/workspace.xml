@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d2bfd4b9-90aa-4fc5-8f5d-516ef0678cc3" name="Default Changelist" comment="">
+    <list default="true" id="d2bfd4b9-90aa-4fc5-8f5d-516ef0678cc3" name="Default Changelist" comment="Last: (FIX) Removing records and corresponding nodes&#10;&#10;TODO:&#10;Bad CRC detection testing&#10;Origin Network Records&#10;Global testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package">
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/iotpot/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/iotpot/CONSTANTS.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/CONSTANTS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/Configuration.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Configuration.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/iotpot/Controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/iotpot/LICENSE" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/iotpot/Monitor.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Monitor.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/iotpot/Receiver.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Receiver.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/iotpot/Support.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Support.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/TrafficGenerator.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/TrafficGenerator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/Transmitter.py" beforeDir="false" afterPath="$PROJECT_DIR$/iotpot/Transmitter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/iotpot/config.cfg" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -21,26 +20,83 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/iotpot/Controller.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="719">
-              <caret line="120" column="22" selection-start-line="120" selection-start-column="22" selection-end-line="120" selection-end-column="22" />
+            <state relative-caret-position="627">
+              <caret line="369" column="19" lean-forward="true" selection-start-line="369" selection-start-column="19" selection-end-line="369" selection-end-column="19" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
+                <element signature="e#855#1194#0" />
+                <element signature="e#3490#3507#0" />
+                <element signature="e#3543#3558#0" />
+                <element signature="e#3611#4456#0" />
+                <element signature="e#7611#8152#0" />
+                <element signature="e#8263#8665#0" />
+                <element signature="e#8799#9296#0" />
+                <element signature="e#12029#12780#0" />
+                <element signature="e#12870#12990#0" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/iotpot/.gitignore">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="445">
+              <caret line="88" column="4" selection-start-line="88" selection-start-column="4" selection-end-line="88" selection-end-column="4" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/iotpot/TrafficGenerator.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="782">
+              <caret line="34" column="21" selection-start-line="34" selection-start-column="21" selection-end-line="34" selection-end-column="21" />
+              <folding>
+                <element signature="e#0#13#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/iotpot/Receiver.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="236">
+              <caret line="180" selection-start-line="180" selection-end-line="180" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+                <element signature="e#250#733#0" />
+                <element signature="e#774#1369#0" />
+                <element signature="e#1415#1512#0" />
+                <element signature="e#1562#1654#0" />
+                <element signature="e#1693#2182#0" />
+                <element signature="e#2226#2728#0" />
+                <element signature="e#2865#3029#0" />
+                <element signature="e#3084#3316#0" />
+                <element signature="e#3086#4155#0" />
+                <element signature="e#4361#4453#0" />
+                <element signature="e#4509#4936#0" />
+                <element signature="e#4974#5296#0" />
+                <element signature="e#5343#5532#0" />
+                <element signature="e#6704#6786#0" />
+                <element signature="e#6968#7276#0" />
+                <element signature="e#9508#10065#0" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/iotpot/Monitor.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="414">
-              <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
+            <state relative-caret-position="696">
+              <caret line="32" column="43" selection-start-line="32" selection-start-column="43" selection-end-line="32" selection-end-column="43" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
-                <element signature="e#458#832#0" />
               </folding>
             </state>
           </provider>
@@ -56,12 +112,12 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/iotpot/Receiver.py">
+        <entry file="file://$PROJECT_DIR$/iotpot/Support.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="742">
-              <caret line="225" column="53" selection-start-line="225" selection-start-column="53" selection-end-line="225" selection-end-column="53" />
+            <state relative-caret-position="696">
+              <caret line="179" column="19" selection-start-line="179" selection-start-column="19" selection-end-line="179" selection-end-column="19" />
               <folding>
-                <element signature="e#0#18#0" expanded="true" />
+                <element signature="e#0#11#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -70,20 +126,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/iotpot/CONSTANTS.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="259">
-              <caret line="42" column="27" selection-start-line="42" selection-start-column="27" selection-end-line="42" selection-end-column="27" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/iotpot/Support.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="627">
-              <caret line="173" column="17" lean-forward="true" selection-start-line="173" selection-start-column="17" selection-end-line="173" selection-end-column="17" />
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="558">
+              <caret line="46" column="29" selection-start-line="46" selection-start-column="29" selection-end-line="46" selection-end-column="29" />
             </state>
           </provider>
         </entry>
@@ -99,8 +143,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>responder</find>
-      <find>records</find>
       <find>random</find>
       <find>wrp</find>
       <find>error</find>
@@ -129,6 +171,8 @@
       <find>handle</find>
       <find>synchr</find>
       <find>VIRTUAL</find>
+      <find>&quot;2&quot;</find>
+      <find>pyc</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -160,12 +204,13 @@
         <option value="$PROJECT_DIR$/networks/real_networks.json" />
         <option value="$PROJECT_DIR$/iotpot/Configuration.py" />
         <option value="$PROJECT_DIR$/iotpot/TrafficGenerator.py" />
-        <option value="$PROJECT_DIR$/iotpot/Controller.py" />
         <option value="$PROJECT_DIR$/iotpot/Transmitter.py" />
-        <option value="$PROJECT_DIR$/iotpot/CONSTANTS.py" />
-        <option value="$PROJECT_DIR$/iotpot/Receiver.py" />
         <option value="$PROJECT_DIR$/iotpot/Support.py" />
+        <option value="$PROJECT_DIR$/iotpot/Receiver.py" />
+        <option value="$PROJECT_DIR$/iotpot/CONSTANTS.py" />
         <option value="$PROJECT_DIR$/iotpot/Monitor.py" />
+        <option value="$PROJECT_DIR$/iotpot/Controller.py" />
+        <option value="$PROJECT_DIR$/iotpot/.gitignore" />
       </list>
     </option>
   </component>
@@ -191,11 +236,6 @@
             </path>
             <path>
               <item name="IoT-Honeypot" type="b2602c69:ProjectViewProjectNode" />
-              <item name="IoT-Honeypot" type="462c0819:PsiDirectoryNode" />
-              <item name="iotpot" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="IoT-Honeypot" type="b2602c69:ProjectViewProjectNode" />
               <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
             </path>
           </expand>
@@ -212,7 +252,7 @@
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -319,7 +359,8 @@
       <workItem from="1556264322532" duration="2831000" />
       <workItem from="1556268411659" duration="14286000" />
       <workItem from="1556311622996" duration="3274000" />
-      <workItem from="1556354278889" duration="21324000" />
+      <workItem from="1556354278889" duration="21435000" />
+      <workItem from="1556442375704" duration="10304000" />
     </task>
     <task id="LOCAL-00001" summary="TODO:&#10;Responder&#10;&#10;Bug:&#10;Saving virtual nodes to real network file&#10;Adding config, records and networks as a example[?]&#10;&#10;Working on:&#10;Traffic generator - now is just simple cyclic transmitting pcap files from records&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC">
       <created>1555028750309</created>
@@ -370,17 +411,24 @@
       <option name="project" value="LOCAL" />
       <updated>1556187816485</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Last: (FIX) Removing records and corresponding nodes&#10;&#10;TODO:&#10;Bad CRC detection testing&#10;Origin Network Records&#10;Global testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package">
+      <created>1556403797255</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1556403797255</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="316180000" />
+    <option name="totallyTimeSpent" value="326595000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="57" y="1020" width="1863" height="1084" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.22729774" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.23115025" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -442,7 +490,19 @@
     <MESSAGE value="TODO: Package, code-review&#10;&#10;Done:&#10;Device states&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Non-resposnive mode&#10;Printing status" />
     <MESSAGE value="FIX:&#10;Decoy controllers IDs&#10;Record copies names" />
     <MESSAGE value="Last: Package&#10;&#10;TODO&#10;Testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
-    <option name="LAST_COMMIT_MESSAGE" value="Last: Package&#10;&#10;TODO&#10;Testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
+    <MESSAGE value="Last: (FIX) Removing records and corresponding nodes&#10;&#10;TODO:&#10;Bad CRC detection testing&#10;Origin Network Records&#10;Global testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
+    <option name="LAST_COMMIT_MESSAGE" value="Last: (FIX) Removing records and corresponding nodes&#10;&#10;TODO:&#10;Bad CRC detection testing&#10;Origin Network Records&#10;Global testing&#10;&#10;Done:&#10;Recording&#10;Receiving&#10;Saving networks&#10;Setting communication parameters&#10;CRC&#10;Handling received frames of virtual decoys&#10;Responder&#10;Package" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/iotpot/Controller.py</url>
+          <line>384</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/IoT_Honeypot$Monitor.coverage" NAME="Monitor Coverage Results" MODIFIED="1554990330327" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -486,59 +546,19 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/alerts.log">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot.log">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/networks/real_networks.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="15" selection-start-column="15" selection-end-column="15" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/networks/virtual_networks.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="50" lean-forward="true" selection-start-column="50" selection-end-column="50" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot/iotpot.log">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="437">
-          <caret line="19" lean-forward="true" selection-start-line="19" selection-end-line="19" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot/alerts.log">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot/config.cfg">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="207">
-          <caret line="9" column="23" selection-start-line="9" selection-start-column="23" selection-end-line="9" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/alerts.log" />
+    <entry file="file://$PROJECT_DIR$/iotpot.log" />
+    <entry file="file://$PROJECT_DIR$/networks/real_networks.json" />
+    <entry file="file://$PROJECT_DIR$/networks/virtual_networks.json" />
+    <entry file="file://$PROJECT_DIR$/iotpot/iotpot.log" />
+    <entry file="file://$PROJECT_DIR$/iotpot/alerts.log" />
+    <entry file="file://$PROJECT_DIR$/iotpot/config.cfg" />
     <entry file="file://$PROJECT_DIR$/iotpot/Configuration.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1587">
           <caret line="72" selection-start-line="72" selection-end-line="72" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot/TrafficGenerator.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="29">
-          <caret line="34" column="21" selection-start-line="34" selection-start-column="21" selection-end-line="34" selection-end-column="21" />
-          <folding>
-            <element signature="e#0#13#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -553,6 +573,82 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/README.rst">
+      <provider selected="true" editor-type-id="restructured-text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/iotpot/Support.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="696">
+          <caret line="179" column="19" selection-start-line="179" selection-start-column="19" selection-end-line="179" selection-end-column="19" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/iotpot/data/networks/real_networks.json">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/iotpot/data/networks/virtual_networks.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="55" selection-start-column="55" selection-end-column="55" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/iotpot/TrafficGenerator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="782">
+          <caret line="34" column="21" selection-start-line="34" selection-start-column="21" selection-end-line="34" selection-end-column="21" />
+          <folding>
+            <element signature="e#0#13#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/iotpot/Receiver.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="236">
+          <caret line="180" selection-start-line="180" selection-end-line="180" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#250#733#0" />
+            <element signature="e#774#1369#0" />
+            <element signature="e#1415#1512#0" />
+            <element signature="e#1562#1654#0" />
+            <element signature="e#1693#2182#0" />
+            <element signature="e#2226#2728#0" />
+            <element signature="e#2865#3029#0" />
+            <element signature="e#3084#3316#0" />
+            <element signature="e#3086#4155#0" />
+            <element signature="e#4361#4453#0" />
+            <element signature="e#4509#4936#0" />
+            <element signature="e#4974#5296#0" />
+            <element signature="e#5343#5532#0" />
+            <element signature="e#6704#6786#0" />
+            <element signature="e#6968#7276#0" />
+            <element signature="e#9508#10065#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/iotpot/CONSTANTS.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="558">
+          <caret line="46" column="29" selection-start-line="46" selection-start-column="29" selection-end-line="46" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/iotpot/Monitor.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="696">
+          <caret line="32" column="43" selection-start-line="32" selection-start-column="43" selection-end-line="32" selection-end-column="43" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/iotpot/Responder.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="443">
@@ -560,53 +656,28 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot/CONSTANTS.py">
+    <entry file="file://$PROJECT_DIR$/iotpot/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="259">
-          <caret line="42" column="27" selection-start-line="42" selection-start-column="27" selection-end-line="42" selection-end-column="27" />
+        <state relative-caret-position="445">
+          <caret line="88" column="4" selection-start-line="88" selection-start-column="4" selection-end-line="88" selection-end-column="4" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/iotpot/Controller.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="719">
-          <caret line="120" column="22" selection-start-line="120" selection-start-column="22" selection-end-line="120" selection-end-column="22" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot/Receiver.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="742">
-          <caret line="225" column="53" selection-start-line="225" selection-start-column="53" selection-end-line="225" selection-end-column="53" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot/Support.py">
-      <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="627">
-          <caret line="173" column="17" lean-forward="true" selection-start-line="173" selection-start-column="17" selection-end-line="173" selection-end-column="17" />
+          <caret line="369" column="19" lean-forward="true" selection-start-line="369" selection-start-column="19" selection-end-line="369" selection-end-column="19" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/README.rst">
-      <provider selected="true" editor-type-id="restructured-text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/iotpot/Monitor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="414">
-          <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
-          <folding>
-            <element signature="e#0#10#0" expanded="true" />
-            <element signature="e#458#832#0" />
+            <element signature="e#855#1194#0" />
+            <element signature="e#3490#3507#0" />
+            <element signature="e#3543#3558#0" />
+            <element signature="e#3611#4456#0" />
+            <element signature="e#7611#8152#0" />
+            <element signature="e#8263#8665#0" />
+            <element signature="e#8799#9296#0" />
+            <element signature="e#12029#12780#0" />
+            <element signature="e#12870#12990#0" />
           </folding>
         </state>
       </provider>

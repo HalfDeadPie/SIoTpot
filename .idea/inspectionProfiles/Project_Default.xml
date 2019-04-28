@@ -25,6 +25,7 @@
           <option value="Transmitter.ZWaveReq" />
           <option value="Controller.ZWaveReq" />
           <option value="Responder.Raw" />
+          <option value="iotpot.Receiver.wrpcap" />
         </list>
       </option>
     </inspection_tool>

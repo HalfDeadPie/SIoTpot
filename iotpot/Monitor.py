@@ -43,5 +43,12 @@ class Monitor:
 
     def detect_invalid_frame(self, frame):
         if is_dst_decoy(frame, self.decoys):
-            self.logger.warning('[INVALID] ' + build_received_message(frame))
+            self.logger.debug('[INVALID] ' + build_received_message(frame))
+
+    def log_device_message(self, frame):
+        self.logger.debug(MESSAGE_NETWORK + ' ' + build_received_message(frame))
+
+    def log_decoy_message(self, frame):
+        self.logger.debug(MESSAGE_VIRTUAL + ' ' + build_received_message(frame))
+
 

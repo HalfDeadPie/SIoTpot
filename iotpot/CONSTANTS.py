@@ -40,10 +40,11 @@ SENT_Q_SIZE = 10
 
 LOGGER = 'iotpot_logger'
 
-MESSAGE_BAD_CRC = '[INVALID]'
 MESSAGE_CRC_OK = 'CRC OK'
 MESSAGE_RECORDS_MISSING = 'Decoys for this network are missing. Please, start recording them using a command "record"'
 MESSAGE_VIRTUAL = '[VIRTUAL]'
+MESSAGE_NETWORK = '[NETWORK]'
+MESSAGE_BAD_CRC = '[INVALID]'
 
 NODE_ID_RANGE = 232
 
@@ -90,6 +91,7 @@ ERROR_MISSING_NETWORK_PATH = 'Missing path to networks! Please, use the configur
 ERROR_MISSING_LOGGING_PATH = 'Missing path for a logging file! Please, use the configuration file or the option'
 ERROR_MISSING_ALERTS_PATH = 'Missing path for a alerts file! Please, use the configuration file or the option'
 ERROR_NO_GENERATED_TRAFFIC = 'Missing records for '
+ERROR_NO_HOMEID_TO = 'Missing target network!'
 
 EXIT_TRAFFIC_GENERATOR = 'TERMINATING TRANSMITTING PROCESS'
 EXIT_RECEIVER_GENERATOR = 'TERMINATING RECEIVING PROCESS'
@@ -105,3 +107,8 @@ ALERTS_FILE = 'alerts.log'
 DEF_SAMP = 2000000
 DEF_FREQ = 868420000
 DEF_TX = 25
+
+DEFAULT_DATA_PATH = 'data/'
+DEFAULT_NETWORKS_PATH = DEFAULT_DATA_PATH + 'networks'
+DEFAULT_RECORDS_PATH = DEFAULT_DATA_PATH + 'records/'
+DEFAULT_HOME_ID = '0xdf11f630'

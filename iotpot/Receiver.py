@@ -8,6 +8,7 @@ import json
 from scapy.all import *
 from Support import *
 
+
 class Receiver():
 
     def __init__(self, configuration, network, decoys, logger, receiver_conn, responder):
@@ -26,9 +27,10 @@ class Receiver():
 
     def filter_free_ids(self):
         for home_id, node_list in self.networks.iteritems():  # for all real networks
-            self.free_ids[home_id] = list(range(NODE_ID_RANGE))  # create range of free node IDs
+            self.free_ids[home_id] = list(range(1, NODE_ID_RANGE))  # create range of free node IDs
+            self.free_ids[home_id] = map(str, self.free_ids[home_id])
             for node in node_list:  # and every real node
-                self.free_ids[home_id].remove(node)  # delete from free IDs
+                self.free_ids[home_id].remove(str(node))  # delete from free IDs
 
             if home_id in self.decoys.keys():  # and do same thing with decoys
                 for node, _ in self.decoys[home_id].iteritems():
@@ -78,32 +80,33 @@ class Receiver():
             self.logger.info(INFO_NEW_REAL + str(dst))
             safe_append(network, dst)
 
+    def choose_id(self, home_id, real_node):
+        if real_node == PRIMARY_CONTROLLER:
+            return self.free_ids[home_id].pop(0)
+        else:
+            return self.free_ids[home_id].pop(10)
+
+    def set_init_state(self, home_id, real_node, virtual_node):
+        if str(real_node) == str(PRIMARY_CONTROLLER):
+            self.decoys[home_id][virtual_node][DEC_STATE] = unicode(DEC_STATE_CONTROLLER)
+        else:
+            self.decoys[home_id][virtual_node][DEC_STATE] = unicode(DEC_STATE_OFF)
+
     def virtualize_and_save_record(self, frame_list, directory):
         mapped_pairs = {}
         record_name = str(time.strftime(FILE_TIME_FORMAT)) + RECORD_EXTENSION
 
-        for home_id, nodelist in self.networks.iteritems():  # for all saved real nodes
+        for home_id, nodelist in self.networks.iteritems():
             for real_node in nodelist:
-                if real_node == PRIMARY_CONTROLLER:
-                    virtual_node = self.free_ids[home_id][1]
-                else:
-                    virtual_node = random.choice(self.free_ids[home_id])  # generate random virtual ID
-                self.free_ids[home_id].remove(virtual_node)  # remove it from free ID list
+                virtual_node = self.choose_id(home_id, real_node)
                 mapped_pairs[real_node] = virtual_node  # map virtual and real nodes
-
                 safe_create_dict_dict(self.decoys, home_id)
                 safe_create_dict_dict(self.decoys[home_id], virtual_node)
                 safe_create_dict_list(self.decoys[home_id][virtual_node], DEC_RECORD)
                 safe_append(self.decoys[home_id][virtual_node][DEC_RECORD], record_name)
-                if str(real_node) == str(PRIMARY_CONTROLLER):
-                    self.decoys[home_id][virtual_node][DEC_STATE] = unicode(DEC_STATE_CONTROLLER)
-                else:
-                    self.decoys[home_id][virtual_node][DEC_STATE] = unicode(DEC_STATE_OFF)
+                self.set_init_state(home_id, real_node, virtual_node)
 
-        for frame in frame_list:  # for all recorded frames
-            frame.src = mapped_pairs[frame.src]  # swap real and virtual IDs
-            frame.dst = mapped_pairs[frame.dst]  # ID of nodes
-
+        swap_mapping(frame_list, mapped_pairs)
         wrpcap(directory + '/' + record_name, frame_list)  # save records to pcap files
 
     def delete_record(self, records):
@@ -142,7 +145,7 @@ class Receiver():
 
     # start activity ---------------------------------------------------------------------------------------------------
 
-    def start(self, recording, passive = False):
+    def start(self, recording, passive=False):
 
         if recording:  # in case of recording
             sniffradio(radio=ZWAVE, prn=lambda frame: self.record(frame))  # sniff frames until user signal
@@ -176,57 +179,52 @@ class Receiver():
                     self.remove_duplicate_decoys(frame)
                     self.save_networks()
 
-
     def handle_passive(self, frame):
         if ZWaveReq in frame:
             if calc_crc(frame) == frame.crc:
                 frame.show()
-                #self.map_network(frame)
+                # self.map_network(frame)
             else:
                 self.logger.debug(MESSAGE_BAD_CRC)
-
 
     def handle(self, frame):
         if ZWaveReq in frame:
             if same_home_id(frame, self.configuration.home_id):
                 if calc_crc(frame) == frame.crc:
 
-                        # only first message to stick on Home ID
-                        if not self.configuration.home_id:
-                            self.monitor.handle_generator(frame)
+                    # only first message to stick on Home ID
+                    if not self.configuration.home_id:
+                        self.monitor.handle_generator(frame)
 
-                        # decoy frame
-                        if self.decoy_in_frame(frame):
-                            self.logger.debug(build_received_message(frame) + ' ' + MESSAGE_VIRTUAL)
-                            frame_hash = calc_hash(frame)
+                    # decoy frame
+                    if self.decoy_in_frame(frame):
+                        self.monitor.log_decoy_message(frame)
+                        frame_hash = calc_hash(frame)
 
-                            # if sent by honeypot
-                            if frame_hash in self.decoy_frames_out:
+                        # if sent by honeypot
+                        if frame_hash in self.decoy_frames_out:
 
-                                # if not received yet
-                                if frame_hash not in self.decoy_frames_in:
-                                    self.decoy_frames_in.appendleft(frame)
+                            # if not received yet
+                            if frame_hash not in self.decoy_frames_in:
+                                self.decoy_frames_in.appendleft(frame)
 
-                                # if received duplicate
-                                else:
-                                    self.monitor.detect_attempt_replay(frame)
-                                    if self.responder:
-                                        self.responder.respond(frame)
-
-                            # if was not sent by honeypot
+                            # if received duplicate
                             else:
-                                self.monitor.detect_attempt_modified(frame)
+                                self.monitor.detect_attempt_replay(frame)
                                 if self.responder:
                                     self.responder.respond(frame)
-                        else:
-                            self.logger.debug(MESSAGE_CRC_OK)
-                            #self.map_network(frame)
-                else:
-                    self.logger.debug(build_received_message(frame) + ' ' + MESSAGE_BAD_CRC)
-                    self.monitor.detect_invalid_frame(frame)
-                    if self.responder:
-                        self.responder.respond(frame)
 
+                        # if was not sent by honeypot
+                        else:
+                            self.monitor.detect_attempt_modified(frame)
+                            if self.responder:
+                                self.responder.respond(frame)
+                    else:
+                        self.monitor.log_device_message(frame)
+                else:
+                    self.monitor.detect_invalid_frame(frame)
+                    if self.responder and is_dst_decoy(frame, self.decoys):
+                        self.responder.respond(frame)
 
     def record(self, frame):
         if ZWaveReq in frame:

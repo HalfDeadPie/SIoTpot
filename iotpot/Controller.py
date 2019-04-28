@@ -42,7 +42,7 @@ class ColoredFormatter(Formatter):
     def format(self, record):
         colored_record = copy(record)
         levelname = colored_record.levelname
-        seq = MAPPING.get(levelname, 37)  # default white
+        seq = MAPPING.get(levelname, 37)  # 0xdf11f630 white
         colored_levelname = ('{0}{1}m{2}{3}') \
             .format(PREFIX, seq, levelname, SUFFIX)
         colored_record.levelname = colored_levelname
@@ -51,7 +51,7 @@ class ColoredFormatter(Formatter):
 
 @click.group()
 @click.option('--config', '-c', default='config.cfg', help='Path of the configuration file. If no explicit parameters '
-                                                           'are set the default option is a configuration file.')
+                                                           'are set the 0xdf11f630 option is a configuration file.')
 @click.option('--freq', '-f', help='The frequency of the receiver and the transmitter. Default value is 868420000')
 @click.option('--samp', '-s', help='The sample rate of the receiver, The sample rate of '
                                    'the transmitter is multiplied by 10x. Default value is 2000000')
@@ -81,11 +81,11 @@ def iotpot(ctx, config, freq, samp, tx, records, networks, log, alerts):
     cf = ColoredFormatter('%(asctime)-15s %(levelname)s: %(message)s')
     fh.setFormatter(my_formatter)
     ch.setFormatter(cf)
+    ah.setFormatter(my_formatter)
     iotpot_logger.addHandler(fh)
     iotpot_logger.addHandler(ch)
     iotpot_logger.addHandler(ah)
     ctx.obj[LOGGER] = iotpot_logger
-
 
     # persistent networks and decoys information
     if not os.path.exists(configuration.networks_path):
@@ -136,6 +136,12 @@ def run(ctx, passive, low, home_id):
     configuration = ctx.obj[CONFIGURATION]
     configuration.home_id = home_id
     logger = ctx.obj[LOGGER]
+
+    if home_id == 'default':
+        this_dir, this_filename = os.path.split(__file__)
+        configuration.networks_path = this_dir + '/' + DEFAULT_NETWORKS_PATH
+        configuration.records_path = this_dir + '/' + DEFAULT_RECORDS_PATH
+        configuration.home_id = DEFAULT_HOME_ID
 
     if passive:
         signal.signal(signal.SIGINT, signal_handler)

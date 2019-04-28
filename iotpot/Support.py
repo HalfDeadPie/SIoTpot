@@ -180,3 +180,9 @@ def is_dst_decoy(frame, decoys):
         return True
     else:
         return False
+
+
+def swap_mapping(frame_list, mapped_pairs):
+    for frame in frame_list:  # for all recorded frames
+        frame.src = int(mapped_pairs[frame.src])  # swap real and virtual IDs
+        frame.dst = int(mapped_pairs[frame.dst])  # ID of nodes
