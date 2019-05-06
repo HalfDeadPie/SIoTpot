@@ -8,7 +8,7 @@ setup(
     author_email='s.stefunko@gmail.com',
     keywords='IoT, honeypot, IoTpot, Iot honeypot, security',
     license='Public Domain',
-    url='https://github.com/HalfDeadPie/FlaskChat/blob/master/setup.py',
+    url='https://github.com/HalfDeadPie/IoTpot',
     packages=['iotpot'],
     package_data={'iotpot': ['networks/*.json', 'records/*']},
     python_requires='~=2.7',
