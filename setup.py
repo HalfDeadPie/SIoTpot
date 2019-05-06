@@ -10,7 +10,6 @@ setup(
     license='Public Domain',
     url='https://github.com/HalfDeadPie/IoTpot',
     packages=['iotpot'],
-    package_data={'iotpot': ['networks/*.json', 'records/*']},
     python_requires='~=2.7',
     classifiers=[
         'Intended Audience :: Developers',
