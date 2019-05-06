@@ -11,85 +11,61 @@ def parse(file):
     return parser
 
 
-class Configuration():
+class Configuration:
     def __init__(self, filepath, freq, samp, tx, records, networks, logging_file, alerts_file):
         self.home_id = None
         parser = parse(filepath)
 
         # COMMUNICATION PARAMETERS -------------------------------------------------------------------------------------
 
-        if parser.has_section(COMMUNICATION):
-            parameters = parser[COMMUNICATION]
+        self.freq = freq
+        if not freq:
+            try:
+                self.freq = parser[COMMUNICATION][FREQ]
+            except:
+                self.freq = DEF_FREQ
 
-            # set frequency
-            if not freq:
-                try:
-                    self.freq = parameters[FREQ]
-                except:
-                    self.freq = DEF_FREQ
-            else:
-                self.freq = freq
+        self.samp_rate = samp
+        if not samp:
+            try:
+                self.samp_rate = parser[COMMUNICATION][SAMP_RATE]
+            except:
+                self.samp_rate = DEF_SAMP
 
-            if not samp:
-                try:
-                    self.samp_rate = parameters[SAMP_RATE]
-                except:
-                    self.samp_rate = DEF_SAMP
-            else:
-                self.samp_rate = samp
+        self.tx = tx
+        if not tx:
+            try:
+                self.tx = parser[COMMUNICATION][TX_GAIN]
+            except:
+                self.tx = DEF_TX
 
-            if not tx:
-                try:
-                    self.tx = parameters[TX_GAIN]
-                except:
-                    self.tx = DEF_TX
-            else:
-                self.tx = tx
+        self.records_path = records
+        if not records:
+            try:
+                self.records_path = parser[RECORDING][RECORDS_PATH]
+            except:
+                sys.exit(ERROR_MISSING_RECORD_PATH)
 
+        self.networks_path = networks
+        if not networks:
+            try:
+                self.networks_path = parser[NETWORKS][NETWORKS_PATH]
+            except:
+                sys.exit(ERROR_MISSING_NETWORK_PATH)
 
+        self.logging_file = logging_file
+        if not logging_file:
+            try:
+                self.logging_file = parser[LOGGING][LOGGING_PATH] + LOGGING_FILE
+            except:
+                sys.exit(ERROR_MISSING_LOGGING_PATH)
 
-
-        if parser.has_section(RECORDING):
-            parameters = parser[RECORDING]
-            if not records:
-                try:
-                    self.records_path = parameters[RECORDS_PATH]
-                except:
-                    sys.exit(ERROR_MISSING_RECORD_PATH)
-            else:
-                self.records_path = records
-
-
-        if parser.has_section(NETWORKS):
-            parameters = parser[NETWORKS]
-            if not networks:
-                try:
-                    self.networks_path = parameters[NETWORKS_PATH]
-                except:
-                    sys.exit(ERROR_MISSING_NETWORK_PATH)
-            else:
-                self.networks_path = networks
-
-
-
-
-        if parser.has_section(LOGGING):
-            parameters = parser[LOGGING]
-            if not logging_file:
-                try:
-                    self.logging_file = parameters[LOGGING_PATH] + LOGGING_FILE
-                except:
-                    sys.exit(ERROR_MISSING_LOGGING_PATH)
-            else:
-                self.logging_file = logging_file
-
-            if not alerts_file:
-                try:
-                    self.alerts_file = parameters[ALERTS_PATH] + ALERTS_FILE
-                except:
-                    sys.exit(ERROR_MISSING_ALERTS_PATH)
-            else:
-                self.alerts_file = logging_file
+        self.alerts_file = logging_file
+        if not alerts_file:
+            try:
+                self.alerts_file = parser[LOGGING][ALERTS_PATH] + ALERTS_FILE
+            except:
+                sys.exit(ERROR_MISSING_ALERTS_PATH)
 
         self.real_networks_name = REAL_NETWORKS_NAME
         self.virtual_networks_name = VIRTUAL_NETWORKS_NAME

@@ -21,7 +21,21 @@ class Transmitter():
 
         frame[ZWaveReq].crc = calc_crc(frame)
 
-        self.conn.send(calc_hash(frame))
+        if not self.conn.send(calc_hash(frame)):
+            self.conn.send(calc_hash(frame))
+        send(frame, verbose=False)
+
+    def send_test_frame(self, frame, hash):
+        self.seqn += 1
+        if self.seqn >= SEQN_RANGE:
+            self.seqn = 0
+        frame.seqn = self.seqn
+
+        frame[ZWaveReq].crc = calc_crc(frame)
+
+        if hash:
+            self.conn.send(calc_hash(frame))
+
         send(frame, verbose=False)
 
     def send_exit(self):

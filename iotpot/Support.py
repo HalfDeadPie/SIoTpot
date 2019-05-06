@@ -102,6 +102,13 @@ def build_received_message(frame):
     return message
 
 
+def build_stats_report(statistics):
+    message = "\n"
+    for key, value in statistics.iteritems():
+        message += key + ': ' + str(value) + '\n'
+    return message
+
+
 def list_free_ids(taken):
     free_ids = set(list(range(NODE_ID_RANGE)))
     return list(filter(lambda x: x not in taken, free_ids))
@@ -168,13 +175,16 @@ def remove_unrecorded_decoys(decoys, home_id, records_to_delete):
 
 
 def same_home_id(frame, home_id):
-    return str(hex(frame.homeid)) == str(home_id)
+    return str(hex(frame.homeid)) == str(home_id) or not home_id
 
 
 def is_dst_decoy(frame, decoys):
     home_id = text_id(frame.homeid)
     dst = str(frame.dst)
-    decoy_list = decoys[home_id].keys()
+    try:
+        decoy_list = decoys[home_id].keys()
+    except:
+        return False
 
     if dst in decoy_list:
         return True

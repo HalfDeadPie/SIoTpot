@@ -1,12 +1,9 @@
-import random
-import time
+import sys
 
 from scapy.layers.ZWave import *
-
-from Transmitter import Transmitter
-
 from Support import *
 from CONSTANTS import *
+
 
 class TrafficGenerator():
 
@@ -22,6 +19,7 @@ class TrafficGenerator():
 
     def load_decoys_frames(self, home_id):
         record_files = []
+
         for node in list(self.decoys[home_id].keys()):
             record_files.append(self.decoys[home_id][node][DEC_RECORD])
 
@@ -52,16 +50,36 @@ class TrafficGenerator():
         except Exception as e:
             pass
 
-
-    def start(self):
-        # receive HomeID of virtual network from receiver
+    def start(self, test=None):
         if self.configuration.home_id:
             home_id = self.configuration.home_id
         else:
             home_id = self.conn.recv()
         self.logger.debug('Setting HomeID for traffic generator: ' + home_id)
-        self.load_decoys_frames(home_id)
-        while True:
+
+        if test == CMD_SET:
+            self.records = rdpcap('/home/halfdeadpie/PycharmProjects/IoT-Honeypot/tests/records/set_frames.pcap')
+        elif test == CMD_GET:
+            self.records = rdpcap('/home/halfdeadpie/PycharmProjects/IoT-Honeypot/tests/records/get_frames.pcap')
+        elif test == CMD_REPORT:
+            self.records = rdpcap('/home/halfdeadpie/PycharmProjects/IoT-Honeypot/tests/records/report_frames.pcap')
+        else:
+            self.load_decoys_frames(home_id)
+
+        time.sleep(5)
+        self.logger.info(MESSAGE_STARTING_GENERATOR)
+        if test:
+            counter = 1
             for frame in self.records:
-                self.transmitter.send_frame(frame)
+                if counter % 5 == 0:
+                    self.transmitter.send_test_frame(frame, False)
+                else:
+                    self.transmitter.send_test_frame(frame, True)
                 time.sleep(1)
+                counter += 1
+            self.logger.info('TEST FINISHED!')
+        else:
+            while True:
+                for frame in self.records:
+                    self.transmitter.send_frame(frame)
+                    time.sleep(1)

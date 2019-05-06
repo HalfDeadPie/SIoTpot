@@ -7,7 +7,7 @@ NETWORKS = 'networks'
 REAL_NETWORKS_NAME = 'real_networks.json'
 VIRTUAL_NETWORKS_NAME = 'virtual_networks.json'
 
-FREQ = 'frequency'
+FREQ = 'freq'
 SAMP_RATE = 'sample_rate'
 TX_GAIN = 'tx_gain'
 ZWAVE = 'Zwave'
@@ -45,6 +45,8 @@ MESSAGE_RECORDS_MISSING = 'Decoys for this network are missing. Please, start re
 MESSAGE_VIRTUAL = '[VIRTUAL]'
 MESSAGE_NETWORK = '[NETWORK]'
 MESSAGE_BAD_CRC = '[INVALID]'
+MESSAGE_MALICIOUS = '[MALICOUS]'
+MESSAGE_STARTING_GENERATOR = 'Starting the traffic generator'
 
 NODE_ID_RANGE = 232
 
@@ -92,6 +94,8 @@ ERROR_MISSING_LOGGING_PATH = 'Missing path for a logging file! Please, use the c
 ERROR_MISSING_ALERTS_PATH = 'Missing path for a alerts file! Please, use the configuration file or the option'
 ERROR_NO_GENERATED_TRAFFIC = 'Missing records for '
 ERROR_NO_HOMEID_TO = 'Missing target network!'
+ERROR_WRONG_TESTING = 'Missing command for test (SET/GET/REPORT)!'
+ERROR_MISSING_DECOYS = 'Missing decoys for this network! It is recommened to record real network first.'
 
 EXIT_TRAFFIC_GENERATOR = 'TERMINATING TRANSMITTING PROCESS'
 EXIT_RECEIVER_GENERATOR = 'TERMINATING RECEIVING PROCESS'
@@ -112,3 +116,19 @@ DEFAULT_DATA_PATH = 'data/'
 DEFAULT_NETWORKS_PATH = DEFAULT_DATA_PATH + 'networks'
 DEFAULT_RECORDS_PATH = DEFAULT_DATA_PATH + 'records/'
 DEFAULT_HOME_ID = '0xdf11f630'
+
+STAT_REAL = 'real'
+STAT_INVALID = 'invalid'
+STAT_INVALID_SET = 'invalid-set'
+STAT_INVALID_GET = 'invalid-get'
+STAT_INVALID_REPORT = 'invalid-report'
+STAT_DECOY = 'decoy'
+STAT_MALICIOUS = 'malicous'
+STAT_GET = 'malicious-get'
+STAT_SET = 'malicious-set'
+STAT_REPORT = 'malicious-report'
+STAT_RES_ACK = 'respond_ack'
+STAT_RES_REPORT = 'respond_report'
+STAT_OTHER = 'other'
+
+RESPOND_SLEEP_TIME = 0.3

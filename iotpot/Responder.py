@@ -1,22 +1,41 @@
 from Support import *
 
+
 class Responder:
     def __init__(self, transmitter, decoys, logger):
         self.transmitter = transmitter
         self.decoys = decoys
         self.logger = logger
+        self.stats = {STAT_RES_ACK: 0, STAT_RES_REPORT: 0}
+
+    def inc_res_ack(self):
+        self.stats[STAT_RES_ACK] += 1
+
+    def inc_res_report(self):
+        self.stats[STAT_RES_REPORT] += 1
 
     def reply_ack(self, frame):
+        self.inc_res_ack()
         ack_frame = frame[ZWaveReq].copy()
         ack_frame.src, ack_frame.dst = ack_frame.dst, ack_frame.src
         ack_frame.ackreq = Z_ACK_REQ_NO
         ack_frame.headertype = Z_ACK_HEADER_TYPE
-        del (ack_frame[ZWaveSwitchBin])
+
+        try:
+            del (ack_frame[ZWaveSwitchBin])
+        except:
+            pass
+        try:
+            del (ack_frame[Raw])
+        except:
+            pass
+
         ack_frame.length = calc_length(ack_frame)
         ack_frame.crc = calc_crc(ack_frame)
         self.transmitter.send_frame(ack_frame)
 
     def reply_report(self, frame):
+        self.inc_res_report()
         report_frame = frame[ZWaveReq].copy()
         report_frame.src, report_frame.dst = report_frame.dst, report_frame.src
         report_frame.ackreq = Z_ACK_REQ_YES
@@ -31,22 +50,24 @@ class Responder:
         self.decoys[text_id(frame.homeid)][str(frame.src)][DEC_STATE] = frame[Raw].load
 
     def respond(self, frame):
-        if ZWaveSwitchBin in frame:
             try:
-                if readable_value(frame, Z_CMD_CLASS) == CLASS_SWITCH_BINARY:
-                    cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
+                self.reply_ack(frame)
+                time.sleep(0.1)
+                cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
+                home_id = text_id(frame.homeid)
 
-                    if cmd == CMD_SET:
-                        self.reply_ack(frame)
-                        if self.decoys[text_id(frame.homeid)][frame.dst][DEC_STATE] != DEC_STATE_CONTROLLER:
-                            self.reply_report(frame)
-                            self.reply_report(frame)
-                            self.logger.debug('Responding ACK, REPORT')
+                if cmd == CMD_SET:
+                    if self.decoys[home_id][str(frame.dst)][DEC_STATE] != DEC_STATE_CONTROLLER:
+                        self.reply_report(frame)
+                        self.logger.debug('Responding ACK, REPORT')
 
-                    elif cmd == CMD_GET:
-                        self.reply_ack(frame)
-                        if self.decoys[text_id(frame.homeid)][frame.dst][DEC_STATE] != DEC_STATE_CONTROLLER:
-                            self.reply_report(frame)
-            except:
+                elif cmd == CMD_GET:
+                    if self.decoys[home_id][str(frame.dst)][DEC_STATE] != DEC_STATE_CONTROLLER:
+                        self.reply_report(frame)
+                        self.logger.debug('Responding ACK, REPORT')
+
+                elif cmd == CMD_REPORT:
+                    self.logger.debug('Responding ACK')
+
+            except Exception as e:
                 pass
-

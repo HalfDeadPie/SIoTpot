@@ -1,9 +1,6 @@
 import collections
 import sys
 import threading
-import time
-import random
-import json
 
 from scapy.all import *
 from Support import *
@@ -111,7 +108,8 @@ class Receiver():
 
     def delete_record(self, records):
         for record in records:
-            os.remove(self.configuration.records_path + '/' + record)
+            print 'removing:' + self.configuration.records_path + '/' + self.configuration.home_id + '/' + record
+            os.remove(self.configuration.records_path + '/' + self.configuration.home_id + '/' + record)
 
     def remove_duplicate_decoys(self, frame):
         home_id = str(hex(frame.homeid))
@@ -120,10 +118,18 @@ class Receiver():
 
         # if node id found in decoys, delete it and its records
         for node in src, dst:
-            if node in decoys:
-                records_to_delete = self.decoys[home_id][node][DEC_RECORD]
-                self.delete_record(records_to_delete)
-                del (self.decoys[home_id][node])
+            if unicode(node) in decoys:
+                records_to_delete = self.decoys[home_id][unicode(node)][DEC_RECORD]
+                try:
+                    self.delete_record(records_to_delete)
+                except Exception as e:
+                    print e
+                try:
+                    del (self.decoys[home_id][unicode(node)])
+                except Exception as e:
+                    print e
+
+                self.decoys[home_id] = {key: val for key, val in self.decoys.items() if DEC_RECORD in records_to_delete}
 
     def synchronizer(self):
         while True:
@@ -181,11 +187,15 @@ class Receiver():
 
     def handle_passive(self, frame):
         if ZWaveReq in frame:
-            if calc_crc(frame) == frame.crc:
-                frame.show()
-                # self.map_network(frame)
-            else:
-                self.logger.debug(MESSAGE_BAD_CRC)
+            if not self.configuration.home_id or same_home_id(frame, self.configuration.home_id):
+                if calc_crc(frame) == frame.crc:
+                    frame.show()
+                    if self.decoy_in_frame(frame):
+                        self.monitor.detect_malicious(frame)
+                    else:
+                        self.monitor.log_device_message(frame)
+                else:
+                    self.monitor.detect_invalid_frame(frame)
 
     def handle(self, frame):
         if ZWaveReq in frame:
@@ -197,6 +207,7 @@ class Receiver():
                         self.monitor.handle_generator(frame)
 
                     # decoy frame
+
                     if self.decoy_in_frame(frame):
                         self.monitor.log_decoy_message(frame)
                         frame_hash = calc_hash(frame)
@@ -210,13 +221,13 @@ class Receiver():
 
                             # if received duplicate
                             else:
-                                self.monitor.detect_attempt_replay(frame)
+                                self.monitor.detect_malicious(frame)
                                 if self.responder:
                                     self.responder.respond(frame)
 
                         # if was not sent by honeypot
                         else:
-                            self.monitor.detect_attempt_modified(frame)
+                            self.monitor.detect_malicious(frame)
                             if self.responder:
                                 self.responder.respond(frame)
                     else:
