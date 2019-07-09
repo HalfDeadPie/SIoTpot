@@ -155,6 +155,8 @@ def run(ctx, passive, low, home_id, test):
     """Starts the IoT honeypot"""
     configuration = ctx.obj[CONFIGURATION]
     configuration.home_id = home_id
+    if test:
+        configuration.home_id = DEFAULT_HOME_ID
     logger = ctx.obj[LOGGER]
 
     if passive:
@@ -209,6 +211,8 @@ def run(ctx, passive, low, home_id, test):
                 configuration_process.start()
                 monitor_process.start()
                 generator.start(test)
+            except Exception as e:
+                print e
             except KeyboardInterrupt:
                 logger.info('\nTerminating...')
                 monitor_process.terminate()

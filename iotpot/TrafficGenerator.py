@@ -53,9 +53,11 @@ class TrafficGenerator():
     def start(self, test=None):
         if self.configuration.home_id:
             home_id = self.configuration.home_id
-        else:
+            self.logger.debug('Setting HomeID for traffic generator: ' + home_id)
+        elif not test:
             home_id = self.conn.recv()
-        self.logger.debug('Setting HomeID for traffic generator: ' + home_id)
+            self.logger.debug('Setting HomeID for traffic generator: ' + home_id)
+            self.logger.debug('Queue size:' + SENT_Q_SIZE)
 
         if test == CMD_SET:
             self.records = rdpcap('/home/halfdeadpie/PycharmProjects/IoT-Honeypot/tests/records/set_frames.pcap')
@@ -75,11 +77,10 @@ class TrafficGenerator():
                     self.transmitter.send_test_frame(frame, False)
                 else:
                     self.transmitter.send_test_frame(frame, True)
-                time.sleep(1)
                 counter += 1
             self.logger.info('TEST FINISHED!')
         else:
             while True:
                 for frame in self.records:
                     self.transmitter.send_frame(frame)
-                    time.sleep(1)
+                    #time.sleep(1)

@@ -36,7 +36,7 @@ TRANSMITTER_CONN = 'transmitter_conn'
 CONFIG = 'config'
 CONFIGURATION = 'configuration'
 
-SENT_Q_SIZE = 10
+SENT_Q_SIZE = 30
 
 LOGGER = 'iotpot_logger'
 

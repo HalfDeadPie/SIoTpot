@@ -236,6 +236,8 @@ class Receiver():
                     self.monitor.detect_invalid_frame(frame)
                     if self.responder and is_dst_decoy(frame, self.decoys):
                         self.responder.respond(frame)
+        else:
+            pass
 
     def record(self, frame):
         if ZWaveReq in frame:
