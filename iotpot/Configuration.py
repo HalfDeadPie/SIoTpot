@@ -12,7 +12,7 @@ def parse(file):
 
 
 class Configuration:
-    def __init__(self, filepath, freq, samp, tx, records, networks, logging_file, alerts_file):
+    def __init__(self, filepath, freq, samp, tx, records, networks, logging_path, alerts_path):
         self.home_id = None
         parser = parse(filepath)
 
@@ -53,19 +53,29 @@ class Configuration:
             except:
                 sys.exit(ERROR_MISSING_NETWORK_PATH)
 
-        self.logging_file = logging_file
-        if not logging_file:
+        self.logging_path = logging_path
+        if not logging_path:
             try:
-                self.logging_file = parser[LOGGING][LOGGING_PATH] + LOGGING_FILE
+                self.logging_path = parser[LOGGING][LOGGING_PATH]
             except:
                 sys.exit(ERROR_MISSING_LOGGING_PATH)
 
-        self.alerts_file = logging_file
-        if not alerts_file:
+        self.alerts_path = alerts_path
+        if not alerts_path:
             try:
-                self.alerts_file = parser[LOGGING][ALERTS_PATH] + ALERTS_FILE
+                self.alerts_path = parser[LOGGING][ALERTS_PATH]
             except:
                 sys.exit(ERROR_MISSING_ALERTS_PATH)
 
-        self.real_networks_name = REAL_NETWORKS_NAME
-        self.virtual_networks_name = VIRTUAL_NETWORKS_NAME
+        self.network_file = REC_NETWORK_FILE
+        self.decoys_file = REC_DECOYS_FILE
+
+    def paths(self):
+        return [self.records_path, self.networks_path, self.logging_path, self.alerts_path]
+
+    def path_network_file(self):
+        return self.networks_path + '/' + self.network_file
+
+    def path_decoys_file(self):
+        return self.networks_path + '/' + self.decoys_file
+

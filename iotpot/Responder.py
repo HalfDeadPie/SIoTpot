@@ -6,16 +6,9 @@ class Responder:
         self.transmitter = transmitter
         self.decoys = decoys
         self.logger = logger
-        self.stats = {STAT_RES_ACK: 0, STAT_RES_REPORT: 0}
-
-    def inc_res_ack(self):
-        self.stats[STAT_RES_ACK] += 1
-
-    def inc_res_report(self):
-        self.stats[STAT_RES_REPORT] += 1
+        #self.stats = {STAT_RES_ACK: 0, STAT_RES_REPORT: 0}
 
     def reply_ack(self, frame):
-        self.inc_res_ack()
         ack_frame = frame[ZWaveReq].copy()
         ack_frame.src, ack_frame.dst = ack_frame.dst, ack_frame.src
         ack_frame.ackreq = Z_ACK_REQ_NO
@@ -35,7 +28,6 @@ class Responder:
         self.transmitter.send_frame(ack_frame)
 
     def reply_report(self, frame):
-        self.inc_res_report()
         report_frame = frame[ZWaveReq].copy()
         report_frame.src, report_frame.dst = report_frame.dst, report_frame.src
         report_frame.ackreq = Z_ACK_REQ_YES

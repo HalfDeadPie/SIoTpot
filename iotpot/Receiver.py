@@ -8,7 +8,7 @@ from Support import *
 
 class Receiver():
 
-    def __init__(self, configuration, network, decoys, logger, receiver_conn, responder):
+    def __init__(self, configuration, network, decoys, logger, frames_in, frames_out, responder=None):
         self.monitor = None
         self.configuration = configuration
         self.recorded_frames = {}
@@ -16,9 +16,8 @@ class Receiver():
         self.decoys = decoys
         self.logger = logger
         self.free_ids = {}
-        self.conn = receiver_conn
-        self.decoy_frames_out = collections.deque(SENT_Q_SIZE * [None], SENT_Q_SIZE)
-        self.decoy_frames_in = collections.deque(SENT_Q_SIZE * [None], SENT_Q_SIZE)
+        self.decoy_frames_in = frames_in
+        self.decoy_frames_out = frames_out
         self.responder = responder
         load_module('gnuradio')
 
@@ -131,17 +130,6 @@ class Receiver():
 
                 self.decoys[home_id] = {key: val for key, val in self.decoys.items() if DEC_RECORD in records_to_delete}
 
-    def synchronizer(self):
-        while True:
-            if self.conn.poll():
-                frame_hash = self.conn.recv()
-                if frame_hash == EXIT:
-                    self.logger.info(EXIT_RECEIVER_GENERATOR)
-                    sys.exit()
-                self.decoy_frames_out.appendleft(frame_hash)
-            else:
-                pass
-
     def decoy_in_frame(self, frame):
         decoys = self.list_decoys(text_id(frame.homeid))
         if decoys and (str(frame.dst) in decoys or str(frame.src) in decoys):
@@ -164,9 +152,6 @@ class Receiver():
         elif passive:
             sniffradio(radio=ZWAVE, prn=lambda p: self.handle_passive(p))
         else:
-            sync_thread = threading.Thread(name='synch_thread', target=self.synchronizer)
-            sync_thread.setDaemon(True)
-            sync_thread.start()
             sniffradio(radio=ZWAVE, prn=lambda p: self.handle(p))
 
         self.save_networks()  # always save networks and decoys
@@ -202,42 +187,39 @@ class Receiver():
             if same_home_id(frame, self.configuration.home_id):
                 if calc_crc(frame) == frame.crc:
 
-                    # only first message to stick on Home ID
-                    if not self.configuration.home_id:
-                        self.monitor.handle_generator(frame)
-
-                    # decoy frame
-
                     if self.decoy_in_frame(frame):
-                        self.monitor.log_decoy_message(frame)
+                        # decoy frame
+
                         frame_hash = calc_hash(frame)
+                        self.monitor.process_frame(STAT_IN, frame, MESSAGE_VIRTUAL)
 
-                        # if sent by honeypot
                         if frame_hash in self.decoy_frames_out:
+                            # honeypot frame
 
-                            # if not received yet
                             if frame_hash not in self.decoy_frames_in:
-                                self.decoy_frames_in.appendleft(frame)
+                                # new frame
+                                append_limited(self.decoy_frames_in, frame_hash, SENT_Q_SIZE)
 
-                            # if received duplicate
                             else:
-                                self.monitor.detect_malicious(frame)
+                                # duplicate frame
+                                self.monitor.process_frame(STAT_MALICIOUS, frame, MESSAGE_MALICIOUS, MALTYPE_REPLAY)
+
                                 if self.responder:
                                     self.responder.respond(frame)
 
-                        # if was not sent by honeypot
                         else:
-                            self.monitor.detect_malicious(frame)
+
+                            # foreign
+                            self.monitor.process_frame(STAT_MALICIOUS, frame, MESSAGE_MALICIOUS, MALTYPE_FOREIGN)
+
                             if self.responder:
                                 self.responder.respond(frame)
                     else:
-                        self.monitor.log_device_message(frame)
+                        self.monitor.process_frame(STAT_REAL, frame, MESSAGE_NETWORK)
                 else:
-                    self.monitor.detect_invalid_frame(frame)
+                    self.monitor.process_frame(STAT_INVALID, frame, MESSAGE_BAD_CRC)
                     if self.responder and is_dst_decoy(frame, self.decoys):
                         self.responder.respond(frame)
-        else:
-            pass
 
     def record(self, frame):
         if ZWaveReq in frame:

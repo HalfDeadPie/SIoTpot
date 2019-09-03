@@ -5,17 +5,17 @@ from Support import *
 from CONSTANTS import *
 
 
-class TrafficGenerator():
+class TrafficGenerator:
 
-    def __init__(self, configuration, networks, decoys, logger, generator_conn, transmitter):
+    def __init__(self, configuration, networks, decoys, logger, stats, transmitter):
         self.configuration = configuration
-        self.conn = generator_conn
         self.networks = networks
         self.decoys = decoys
         self.logger = logger
         self.decoy_frame_lists = {}
         self.records = []
         self.transmitter = transmitter
+        self.stats = stats
 
     def load_decoys_frames(self, home_id):
         record_files = []
@@ -37,50 +37,16 @@ class TrafficGenerator():
             for frame in loaded_frames:
                 self.records.append(frame)
 
-    def is_set(self, frame):
-        try:
-            if ZWaveSwitchBin in frame:
-                cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
-
-                if cmd == CMD_SET:
-                    return True
-                else:
-                    return False
-
-        except Exception as e:
-            pass
-
     def start(self, test=None):
+        home_id = None
         if self.configuration.home_id:
             home_id = self.configuration.home_id
             self.logger.debug('Setting HomeID for traffic generator: ' + home_id)
-        elif not test:
-            home_id = self.conn.recv()
-            self.logger.debug('Setting HomeID for traffic generator: ' + home_id)
-            self.logger.debug('Queue size:' + SENT_Q_SIZE)
 
-        if test == CMD_SET:
-            self.records = rdpcap('/home/halfdeadpie/PycharmProjects/IoT-Honeypot/tests/records/set_frames.pcap')
-        elif test == CMD_GET:
-            self.records = rdpcap('/home/halfdeadpie/PycharmProjects/IoT-Honeypot/tests/records/get_frames.pcap')
-        elif test == CMD_REPORT:
-            self.records = rdpcap('/home/halfdeadpie/PycharmProjects/IoT-Honeypot/tests/records/report_frames.pcap')
-        else:
-            self.load_decoys_frames(home_id)
+        self.load_decoys_frames(home_id)
 
         time.sleep(5)
         self.logger.info(MESSAGE_STARTING_GENERATOR)
-        if test:
-            counter = 1
+        while True:
             for frame in self.records:
-                if counter % 5 == 0:
-                    self.transmitter.send_test_frame(frame, False)
-                else:
-                    self.transmitter.send_test_frame(frame, True)
-                counter += 1
-            self.logger.info('TEST FINISHED!')
-        else:
-            while True:
-                for frame in self.records:
-                    self.transmitter.send_frame(frame)
-                    #time.sleep(1)
+                self.transmitter.send_frame(frame)

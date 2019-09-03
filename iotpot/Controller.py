@@ -1,11 +1,12 @@
+import curses
 import multiprocessing
 import random
 import shutil
 import signal
 import sys
+import time
 
 import click
-import logging
 from scapy.all import *
 from Configuration import Configuration
 from Monitor import Monitor
@@ -13,10 +14,9 @@ from Receiver import Receiver
 from Responder import Responder
 from TrafficGenerator import TrafficGenerator
 from Support import *
-from copy import copy
-from logging import Formatter
 from multiprocessing import Process, Pipe
 from Transmitter import Transmitter
+from Logger import Logger
 
 monitor_stats = {}
 responder_stats = {}
@@ -27,96 +27,28 @@ def signal_handler(sig, frame):
     global iotpot_logger
     if bool(monitor_stats):
         report = build_stats_report(monitor_stats)
-        print 'Monitor statistics:'
         if monitor_stats[STAT_MALICIOUS] > 0:
             iotpot_logger.critical(report)
         else:
             iotpot_logger.info(report)
 
     if bool(responder_stats):
-        print 'Responder statistics:'
         report = build_stats_report(responder_stats)
         iotpot_logger.info(report)
 
     sys.exit(0)
 
 
-def load_json(file):
-    if os.path.isfile(file):
-        return json.load(open(file))
-    else:
-        return {}
-
-
-class ColoredFormatter(Formatter):
-
-    def __init__(self, patern):
-        Formatter.__init__(self, patern)
-
-    def format(self, record):
-        colored_record = copy(record)
-        levelname = colored_record.levelname
-        seq = MAPPING.get(levelname, 37)  # 0xdf11f630 white
-        colored_levelname = ('{0}{1}m{2}{3}') \
-            .format(PREFIX, seq, levelname, SUFFIX)
-        colored_record.levelname = colored_levelname
-        return Formatter.format(self, colored_record)
-
-
-@click.group()
-@click.option('--config', '-c', default='config.cfg', help='Path of the configuration file')
-@click.option('--freq', '-f', help='The frequency of the receiver and the transmitter. Default value is 868420000')
-@click.option('--samp', '-s', help='The sample rate of the receiver, The sample rate of '
-                                   'the transmitter is multiplied by 10x. Default value is 2000000')
-@click.option('--tx', '-t', help='TX gain of the transmitter. Default value is 25')
-@click.option('--records', '-r', help='The path of the records')
-@click.option('--networks', '-n', help='The path of the networks. Default value is networks')
-@click.option('--log', '-l', help='Path to a logging file')
-@click.option('--alerts', '-a', help='Path to a alert logging file')
-@click.pass_context
-def iotpot(ctx, config, freq, samp, tx, records, networks, log, alerts):
-    """Main command iotpot shares context with other subcommands"""
-    ctx.obj[CONFIG] = config
-    config_file = ctx.obj['config']
-    configuration = Configuration(config_file, freq, samp, tx, records, networks, log, alerts)
-    ctx.obj[CONFIGURATION] = configuration
-
-    global iotpot_logger
-    iotpot_logger = logging.getLogger('iotpot')
-    iotpot_logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler(configuration.logging_file)
-    fh.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    ah = logging.FileHandler(configuration.alerts_file)
-    ah.setLevel(logging.WARNING)
-    my_formatter = logging.Formatter('%(asctime)-15s %(levelname)s: %(message)s')
-    cf = ColoredFormatter('%(asctime)-15s %(levelname)s: %(message)s')
-    fh.setFormatter(my_formatter)
-    ch.setFormatter(cf)
-    ah.setFormatter(my_formatter)
-    iotpot_logger.addHandler(fh)
-    iotpot_logger.addHandler(ch)
-    iotpot_logger.addHandler(ah)
-    ctx.obj[LOGGER] = iotpot_logger
-
-    # persistent networks and decoys information
-    if not os.path.exists(configuration.networks_path):
-        os.makedirs(configuration.networks_path)
+signal.signal(signal.SIGINT, signal_handler)
 
 
 def generator_target(generator):
     generator.start()
 
 
-def monitor_target(monitor):
+def receiver_target(receiver, recording, passive):
     signal.signal(signal.SIGINT, signal_handler)
-    global monitor_stats
-    monitor_stats = monitor.stats
-
-    global responder_stats
-    responder_stats = monitor.receiver.responder.stats
-    monitor.start()
+    receiver.start(recording, passive)
 
 
 def set_configuration(configuration, logger):
@@ -142,6 +74,50 @@ def set_configuration(configuration, logger):
             print e
 
 
+@click.group()
+@click.option('--config', '-c', default='config.cfg', help='Path of the configuration file')
+@click.option('--freq', '-f', help='The frequency of the receiver and the transmitter. Default value is 868420000')
+@click.option('--samp', '-s', help='The sample rate of the receiver, The sample rate of '
+                                   'the transmitter is multiplied by 10x. Default value is 2000000')
+@click.option('--tx', '-t', help='TX gain of the transmitter. Default value is 25')
+@click.option('--records', '-r', help='The path of the records')
+@click.option('--networks', '-n', help='The path of the networks. Default value is networks')
+@click.option('--log', '-l', help='Path to a logging file')
+@click.option('--alerts', '-a', help='Path to a alert logging file')
+@click.option('--debug', '-d', help='Level of debug (1-5)', default=1)
+@click.pass_context
+def iotpot(ctx, config, freq, samp, tx, records, networks, log, alerts, debug):
+    """Main command iotpot shares context with other subcommands"""
+    ctx.obj[CONFIG] = config
+    ctx.obj[DEBUG_LEVEL] = debug
+    config_file = ctx.obj['config']
+    ctx.obj[CONFIGURATION] = Configuration(config_file, freq, samp, tx, records, networks, log, alerts)
+
+    # create all subdirectories specified in config file
+    for path in ctx.obj[CONFIGURATION].paths():
+        safe_create_dir(path)
+
+    global iotpot_logger
+    iotpot_logger = Logger.initialize_logger(ctx.obj[CONFIGURATION], debug)
+    ctx.obj[LOGGER] = iotpot_logger
+
+
+def stats_view(stats, debug):
+    time.sleep(10)
+    if debug == 1:
+        while True:
+            sys.stdout.write("\r")
+            for upkey, group in stats.iteritems():
+                sys.stdout.write("{} [SET:{}|GET:{}|REPORT:{}|ACK:{}|OTHER:{}] ".format(upkey,
+                                                                                        str(group[STAT_SET]),
+                                                                                        str(group[STAT_GET]),
+                                                                                        str(group[STAT_REPORT]),
+                                                                                        str(group[STAT_ACK]),
+                                                                                        str(group[STAT_OTHER])))
+            sys.stdout.flush()
+            time.sleep(1)
+
+
 @iotpot.command()
 @click.pass_context
 @click.option('--passive', '-p', is_flag=True,
@@ -149,89 +125,95 @@ def set_configuration(configuration, logger):
                    'displaying all received frames.')
 @click.option('--low', '-l', is_flag=True,
               help='Low-level mode of interaction disables responding, but the traffic is still generated.')
-@click.argument('home_id', required=False)
-@click.option('--test', '-t', hidden=True)
-def run(ctx, passive, low, home_id, test):
-    """Starts the IoT honeypot"""
-    configuration = ctx.obj[CONFIGURATION]
-    configuration.home_id = home_id
-    if test:
-        configuration.home_id = DEFAULT_HOME_ID
-    logger = ctx.obj[LOGGER]
+@click.argument('home_id')
+def run(ctx, passive, low, home_id=None):
+    cfg = ctx.obj[CONFIGURATION]
+    cfg.home_id = home_id
+    honeylog = ctx.obj[LOGGER]
 
-    if passive:
-        signal.signal(signal.SIGINT, signal_handler)
-        network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
-        decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+    with multiprocessing.Manager() as manager:
+        network = manager.dict(load_json(cfg.networks_path + '/' + cfg.network_file))
+        decoys = manager.dict(load_json(cfg.networks_path + '/' + cfg.decoys_file))
 
-        receiver = Receiver(configuration, network, decoys, logger, None, None)
-        monitor = Monitor(configuration, network, decoys, logger, None, receiver)
-        receiver.monitor = monitor
+        inner_stats = init_stats_dict()
+        stats_malicious = manager.dict(inner_stats.copy())
+        stats_invalid = manager.dict(inner_stats.copy())
+        stats_in = manager.dict(inner_stats.copy())
+        stats_out = manager.dict(inner_stats.copy())
 
-        configuration_process = Process(target=set_configuration, args=(configuration, logger))
-        configuration_process.start()
+        stats = {STAT_MALICIOUS: stats_malicious,
+                 STAT_INVALID: stats_invalid,
+                 STAT_IN: stats_in,
+                 STAT_OUT: stats_out}
 
-        signal.signal(signal.SIGINT, signal_handler)
-        global monitor_stats
-        monitor_stats = monitor.stats
+        frames_in = manager.list()
+        frames_out = manager.list()
 
-        monitor.start(passive=True)
+        statsview_process = Process(target=stats_view, args=(stats, ctx.obj[DEBUG_LEVEL]))
 
-    else:
-        with multiprocessing.Manager() as manager:
+        if passive:
+            receiver = Receiver(cfg, network, decoys, honeylog, frames_in, frames_out)
+            monitor = Monitor(cfg, network, decoys, honeylog, stats)
 
-            # load networks to shared dictionaries of manager
-            network = manager.dict(load_json(configuration.networks_path + '/' + configuration.real_networks_name))
-            decoys = manager.dict(load_json(configuration.networks_path + '/' + configuration.virtual_networks_name))
+            receiver.monitor = monitor
+            monitor.receiver = receiver
 
-            if home_id and home_id not in decoys.keys():
+            configuration_process = Process(target=set_configuration, args=(cfg, honeylog))
+            configuration_process.start()
+
+            statsview_process.start()
+            receiver.start(False, True)
+
+        else:
+
+            if not safe_key_in_dict(home_id, decoys.keys()):
                 sys.exit(ERROR_MISSING_DECOYS)
 
             signal.signal(signal.SIGINT, signal_handler)
 
-            monitor_conn, generator_conn = Pipe()
-            receiver_conn, transmitter_conn = Pipe()
+            transmitter = Transmitter(cfg, frames_out, stats)
 
-            transmitter = Transmitter(configuration, transmitter_conn)
-            if not low:
-                responder = Responder(transmitter, decoys, logger)
+            if not low:  # interaction mode
+                responder = Responder(transmitter, decoys, honeylog)
             else:
                 responder = None
-            receiver = Receiver(configuration, network, decoys, logger, receiver_conn, responder)
-            monitor = Monitor(configuration, network, decoys, logger, monitor_conn, receiver)
+
+            receiver = Receiver(cfg, network, decoys, honeylog, frames_in, frames_out, responder)
+            monitor = Monitor(cfg, network, decoys, honeylog, stats)
+
             receiver.monitor = monitor
-            generator = TrafficGenerator(configuration, network, decoys, logger, generator_conn, transmitter)
+            monitor.receiver = receiver
 
-            # init processes
-            monitor_process = Process(target=monitor_target, args=(monitor,))
-            configuration_process = Process(target=set_configuration, args=(configuration, logger))
+            generator = TrafficGenerator(cfg, network, decoys, honeylog, stats, transmitter)
 
-            # start processes
+            configuration_process = Process(target=set_configuration, args=(cfg, honeylog))
+            receiver_process = Process(target=receiver_target, args=(receiver, False, False))
+
             try:
                 configuration_process.start()
-                monitor_process.start()
-                generator.start(test)
-            except Exception as e:
-                print e
+                receiver_process.start()
+                statsview_process.start()
+                generator.start()
             except KeyboardInterrupt:
-                logger.info('\nTerminating...')
-                monitor_process.terminate()
+                honeylog.info('\nTerminating...')
+                receiver_process.terminate()
                 configuration_process.terminate()
 
             configuration_process.join()
-            monitor_process.join()
+            receiver_process.join()
+            statsview_process.join()
 
 
 @iotpot.command()
 @click.pass_context
 def record(ctx):
     """Records frames until users interrupt"""
-    configuration = ctx.obj[CONFIGURATION]
-    logger = ctx.obj[LOGGER]
-    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
-    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
-    receiver = Receiver(configuration, network, decoys, logger, None, None)
-    monitor = Monitor(configuration, network, decoys, logger, None, receiver)
+    cfg = ctx.obj[CONFIGURATION]
+    honeylog = ctx.obj[LOGGER]
+    network = load_json(load_json(cfg.networks_path + '/' + cfg.network_file))
+    decoys = load_json(load_json(cfg.networks_path + '/' + cfg.decoys_file))
+    receiver = Receiver(cfg, network, decoys, honeylog, None, None)
+    monitor = Monitor(cfg, network, decoys, honeylog, None, receiver)
     receiver.monitor = monitor
     monitor.record()
 
@@ -343,9 +325,9 @@ def replicate(ctx, home_id_from, home_id_to):
 @click.pass_context
 def status(ctx):
     """Display persistent information of the IoT honeypot"""
-    configuration = ctx.obj[CONFIGURATION]
-    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
-    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+    cfg = ctx.obj[CONFIGURATION]
+    network = load_json(cfg.path_network_file())
+    decoys = load_json(cfg.path_decoys_file())
 
     for home_id, network_dict in decoys.iteritems():
         print home_id + ' . . . . . . . . . . . . . . . . '

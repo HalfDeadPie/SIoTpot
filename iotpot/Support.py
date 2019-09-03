@@ -1,9 +1,8 @@
 import json
-import os
-import time
 from array import array
 from scapy.all import *
 import xxhash
+import datetime
 from CONSTANTS import *
 
 
@@ -196,3 +195,35 @@ def swap_mapping(frame_list, mapped_pairs):
     for frame in frame_list:  # for all recorded frames
         frame.src = int(mapped_pairs[frame.src])  # swap real and virtual IDs
         frame.dst = int(mapped_pairs[frame.dst])  # ID of nodes
+
+
+def load_json(file):
+    if os.path.isfile(file):
+        return json.load(open(file))
+    else:
+        return {}
+
+
+def safe_key_in_dict(key, dict):
+    if key and key not in dict:
+        return False
+    else:
+        return True
+
+
+def append_limited(frame_queue, element, limit):
+    if len(frame_queue) >= limit:
+        frame_queue.pop(0)
+    frame_queue.append(element)
+
+
+def init_stats_dict():
+    inner_stats = {
+        STAT_GET: 0,
+        STAT_SET: 0,
+        STAT_REPORT: 0,
+        STAT_ACK: 0,
+        STAT_OTHER: 0,
+    }
+
+    return inner_stats

@@ -4,8 +4,8 @@ RECORDING = 'recording'
 RECORDS_PATH = 'records_path'
 
 NETWORKS = 'networks'
-REAL_NETWORKS_NAME = 'real_networks.json'
-VIRTUAL_NETWORKS_NAME = 'virtual_networks.json'
+REC_NETWORK_FILE = 'network.json'
+REC_DECOYS_FILE = 'decoys.json'
 
 FREQ = 'freq'
 SAMP_RATE = 'sample_rate'
@@ -36,7 +36,7 @@ TRANSMITTER_CONN = 'transmitter_conn'
 CONFIG = 'config'
 CONFIGURATION = 'configuration'
 
-SENT_Q_SIZE = 30
+SENT_Q_SIZE = 10
 
 LOGGER = 'iotpot_logger'
 
@@ -117,18 +117,26 @@ DEFAULT_NETWORKS_PATH = DEFAULT_DATA_PATH + 'networks'
 DEFAULT_RECORDS_PATH = DEFAULT_DATA_PATH + 'records/'
 DEFAULT_HOME_ID = '0xdf11f630'
 
+# statistic constant keys
 STAT_REAL = 'real'
+STAT_OUT = 'out'
+STAT_IN = 'in'
+STAT_MALICIOUS = 'malicious'
 STAT_INVALID = 'invalid'
-STAT_INVALID_SET = 'invalid-set'
-STAT_INVALID_GET = 'invalid-get'
-STAT_INVALID_REPORT = 'invalid-report'
-STAT_DECOY = 'decoy'
-STAT_MALICIOUS = 'malicous'
-STAT_GET = 'malicious-get'
-STAT_SET = 'malicious-set'
-STAT_REPORT = 'malicious-report'
-STAT_RES_ACK = 'respond_ack'
-STAT_RES_REPORT = 'respond_report'
-STAT_OTHER = 'other'
+
+STAT_GET = CMD_GET
+STAT_SET = CMD_SET
+STAT_REPORT = CMD_REPORT
+STAT_ACK = 'ACK'
+STAT_OTHER = 'OTHER'
+STAT_CMDS = (STAT_GET, STAT_SET, STAT_REPORT, STAT_ACK, STAT_OTHER)
 
 RESPOND_SLEEP_TIME = 0.3
+
+FRAMES_IN = 'in'
+FRAMES_OUT = 'out'
+
+MALTYPE_REPLAY = '[REPLAY]'
+MALTYPE_FOREIGN = '[FOREIGN]'
+
+DEBUG_LEVEL = 'debug'
