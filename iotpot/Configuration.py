@@ -70,6 +70,8 @@ class Configuration:
         self.network_file = REC_NETWORK_FILE
         self.decoys_file = REC_DECOYS_FILE
 
+        self.verbose = False
+
     def paths(self):
         return [self.records_path, self.networks_path, self.logging_path, self.alerts_path]
 

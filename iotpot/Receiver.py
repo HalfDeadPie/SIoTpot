@@ -144,11 +144,15 @@ class Receiver():
         if recording:  # in case of recording
             sniffradio(radio=ZWAVE, prn=lambda frame: self.record(frame))  # sniff frames until user signal
 
-            for home_id, frame_list in self.recorded_frames.iteritems():  # for all recorded frames
-                directory = self.configuration.records_path + '/' + home_id + '/'  # prepare directory for records
+            # for all recorded frames
+            for home_id, frame_list in self.recorded_frames.iteritems():
+                # prepare directory for records
+                directory = self.configuration.records_path + '/' + home_id + '/'
                 safe_create_dir(directory)
                 self.filter_free_ids()
-                self.virtualize_and_save_record(frame_list, directory)  # virtualize and save them
+                # virtualize and save them
+                self.virtualize_and_save_record(frame_list, directory)
+
         elif passive:
             sniffradio(radio=ZWAVE, prn=lambda p: self.handle_passive(p))
         else:
@@ -173,14 +177,16 @@ class Receiver():
     def handle_passive(self, frame):
         if ZWaveReq in frame:
             if not self.configuration.home_id or same_home_id(frame, self.configuration.home_id):
-                if calc_crc(frame) == frame.crc:
+                if self.configuration.verbose:
                     frame.show()
+
+                if calc_crc(frame) == frame.crc:
                     if self.decoy_in_frame(frame):
-                        self.monitor.detect_malicious(frame)
+                        self.monitor.process_frame(STAT_MALICIOUS, frame, MESSAGE_MALICIOUS, MALTYPE_GENERAL)
                     else:
-                        self.monitor.log_device_message(frame)
+                        self.monitor.process_frame(STAT_REAL, frame, MESSAGE_NETWORK)
                 else:
-                    self.monitor.detect_invalid_frame(frame)
+                    self.monitor.process_frame(STAT_INVALID, frame, MESSAGE_BAD_CRC)
 
     def handle(self, frame):
         if ZWaveReq in frame:
@@ -217,6 +223,7 @@ class Receiver():
                     else:
                         self.monitor.process_frame(STAT_REAL, frame, MESSAGE_NETWORK)
                 else:
+                    # invalid
                     self.monitor.process_frame(STAT_INVALID, frame, MESSAGE_BAD_CRC)
                     if self.responder and is_dst_decoy(frame, self.decoys):
                         self.responder.respond(frame)

@@ -5,8 +5,8 @@ import shutil
 import signal
 import sys
 import time
-
 import click
+
 from scapy.all import *
 from Configuration import Configuration
 from Monitor import Monitor
@@ -54,13 +54,10 @@ def receiver_target(receiver, recording, passive):
 def set_configuration(configuration, logger):
     config_set = False
     while not config_set:
-        time.sleep(1)
         try:
-            print('Trying to set...')
-
-            gnuradio_set_vars(center_freq=configuration.freq,
-                              samp_rate=configuration.samp_rate,
-                              tx_gain=configuration.tx)
+            gnuradio_set_vars(center_freq=int(configuration.freq),
+                              samp_rate=int(configuration.samp_rate),
+                              tx_gain=int(configuration.tx))
 
             if gnuradio_get_vars('center_freq') == configuration.freq:
                 logger.info('Center frequency set: ' + str(configuration.freq) + ' Hz')
@@ -71,7 +68,24 @@ def set_configuration(configuration, logger):
 
             config_set = True
         except Exception as e:
-            print e
+            pass
+            # print e
+
+
+def stats_view(stats, honeypot_debug_level):
+    if honeypot_debug_level is 1:
+        while True:
+            sys.stdout.write("\r")
+            for upkey, group in stats.iteritems():
+                sys.stdout.write(
+                    "{} [S:{}|G:{}|R:{}|A:{}|O:{}] ".format(upkey,
+                                                            str(group[STAT_SET]),
+                                                            str(group[STAT_GET]),
+                                                            str(group[STAT_REPORT]),
+                                                            str(group[STAT_ACK]),
+                                                            str(group[STAT_OTHER])))
+            sys.stdout.flush()
+            time.sleep(1)
 
 
 @click.group()
@@ -102,31 +116,58 @@ def iotpot(ctx, config, freq, samp, tx, records, networks, log, alerts, debug):
     ctx.obj[LOGGER] = iotpot_logger
 
 
-def stats_view(stats, debug):
-    time.sleep(10)
-    if debug == 1:
-        while True:
-            sys.stdout.write("\r")
-            for upkey, group in stats.iteritems():
-                sys.stdout.write("{} [SET:{}|GET:{}|REPORT:{}|ACK:{}|OTHER:{}] ".format(upkey,
-                                                                                        str(group[STAT_SET]),
-                                                                                        str(group[STAT_GET]),
-                                                                                        str(group[STAT_REPORT]),
-                                                                                        str(group[STAT_ACK]),
-                                                                                        str(group[STAT_OTHER])))
-            sys.stdout.flush()
-            time.sleep(1)
+@iotpot.command()
+@click.pass_context
+@click.option('--verbose', '-v', is_flag=True, help='Display received frames.')
+@click.argument('home_id', required=False)
+def listen(ctx, verbose, home_id):
+    cfg = ctx.obj[CONFIGURATION]
+    cfg.home_id = home_id
+    cfg.verbose = verbose
+    honeylog = ctx.obj[LOGGER]
+
+    with multiprocessing.Manager() as manager:
+        network = manager.dict(load_json(cfg.networks_path + '/' + cfg.network_file))
+        decoys = manager.dict(load_json(cfg.networks_path + '/' + cfg.decoys_file))
+
+        inner_stats = init_stats_dict()
+        stats_real = manager.dict(inner_stats.copy())
+        stats_malicious = manager.dict(inner_stats.copy())
+        stats_invalid = manager.dict(inner_stats.copy())
+        stats_in = manager.dict(inner_stats.copy())
+        stats_out = manager.dict(inner_stats.copy())
+
+        stats = {STAT_REAL: stats_real,
+                 STAT_MALICIOUS: stats_malicious,
+                 STAT_INVALID: stats_invalid,
+                 STAT_IN: stats_in,
+                 STAT_OUT: stats_out}
+
+        frames_in = list()
+        frames_out = list()
+
+        receiver = Receiver(cfg, network, decoys, honeylog, frames_in, frames_out)
+        monitor = Monitor(cfg, network, decoys, honeylog, stats)
+
+        receiver.monitor = monitor
+        monitor.receiver = receiver
+
+        configuration_process = Process(target=set_configuration, args=(cfg, honeylog))
+        configuration_process.start()
+
+        if not verbose:
+            statsview_process = Process(target=stats_view, args=(stats, ctx.obj[DEBUG_LEVEL]))
+            statsview_process.start()
+
+        receiver.start(False, True)
 
 
 @iotpot.command()
 @click.pass_context
-@click.option('--passive', '-p', is_flag=True,
-              help='Passive mode of the IoThoneypot disable any transmitting and allows'
-                   'displaying all received frames.')
 @click.option('--low', '-l', is_flag=True,
               help='Low-level mode of interaction disables responding, but the traffic is still generated.')
 @click.argument('home_id')
-def run(ctx, passive, low, home_id=None):
+def run(ctx, low, home_id):
     cfg = ctx.obj[CONFIGURATION]
     cfg.home_id = home_id
     honeylog = ctx.obj[LOGGER]
@@ -136,12 +177,14 @@ def run(ctx, passive, low, home_id=None):
         decoys = manager.dict(load_json(cfg.networks_path + '/' + cfg.decoys_file))
 
         inner_stats = init_stats_dict()
+        stats_real = manager.dict(inner_stats.copy())
         stats_malicious = manager.dict(inner_stats.copy())
         stats_invalid = manager.dict(inner_stats.copy())
         stats_in = manager.dict(inner_stats.copy())
         stats_out = manager.dict(inner_stats.copy())
 
-        stats = {STAT_MALICIOUS: stats_malicious,
+        stats = {STAT_REAL: stats_real,
+                 STAT_MALICIOUS: stats_malicious,
                  STAT_INVALID: stats_invalid,
                  STAT_IN: stats_in,
                  STAT_OUT: stats_out}
@@ -151,57 +194,42 @@ def run(ctx, passive, low, home_id=None):
 
         statsview_process = Process(target=stats_view, args=(stats, ctx.obj[DEBUG_LEVEL]))
 
-        if passive:
-            receiver = Receiver(cfg, network, decoys, honeylog, frames_in, frames_out)
-            monitor = Monitor(cfg, network, decoys, honeylog, stats)
+        if not safe_key_in_dict(home_id, decoys.keys()):
+            sys.exit(ERROR_MISSING_DECOYS)
 
-            receiver.monitor = monitor
-            monitor.receiver = receiver
+        signal.signal(signal.SIGINT, signal_handler)
 
-            configuration_process = Process(target=set_configuration, args=(cfg, honeylog))
-            configuration_process.start()
+        transmitter = Transmitter(cfg, frames_out, stats)
 
-            statsview_process.start()
-            receiver.start(False, True)
-
+        if not low:  # interaction mode
+            responder = Responder(transmitter, decoys, honeylog)
         else:
+            responder = None
 
-            if not safe_key_in_dict(home_id, decoys.keys()):
-                sys.exit(ERROR_MISSING_DECOYS)
+        receiver = Receiver(cfg, network, decoys, honeylog, frames_in, frames_out, responder)
+        monitor = Monitor(cfg, network, decoys, honeylog, stats)
 
-            signal.signal(signal.SIGINT, signal_handler)
+        receiver.monitor = monitor
+        monitor.receiver = receiver
 
-            transmitter = Transmitter(cfg, frames_out, stats)
+        generator = TrafficGenerator(cfg, network, decoys, honeylog, stats, transmitter)
 
-            if not low:  # interaction mode
-                responder = Responder(transmitter, decoys, honeylog)
-            else:
-                responder = None
+        configuration_process = Process(target=set_configuration, args=(cfg, honeylog))
+        receiver_process = Process(target=receiver_target, args=(receiver, False, False))
 
-            receiver = Receiver(cfg, network, decoys, honeylog, frames_in, frames_out, responder)
-            monitor = Monitor(cfg, network, decoys, honeylog, stats)
+        try:
+            configuration_process.start()
+            receiver_process.start()
+            statsview_process.start()
+            generator.start()
+        except KeyboardInterrupt:
+            honeylog.info('\nTerminating...')
+            receiver_process.terminate()
+            configuration_process.terminate()
 
-            receiver.monitor = monitor
-            monitor.receiver = receiver
-
-            generator = TrafficGenerator(cfg, network, decoys, honeylog, stats, transmitter)
-
-            configuration_process = Process(target=set_configuration, args=(cfg, honeylog))
-            receiver_process = Process(target=receiver_target, args=(receiver, False, False))
-
-            try:
-                configuration_process.start()
-                receiver_process.start()
-                statsview_process.start()
-                generator.start()
-            except KeyboardInterrupt:
-                honeylog.info('\nTerminating...')
-                receiver_process.terminate()
-                configuration_process.terminate()
-
-            configuration_process.join()
-            receiver_process.join()
-            statsview_process.join()
+        configuration_process.join()
+        receiver_process.join()
+        statsview_process.join()
 
 
 @iotpot.command()
@@ -210,12 +238,12 @@ def record(ctx):
     """Records frames until users interrupt"""
     cfg = ctx.obj[CONFIGURATION]
     honeylog = ctx.obj[LOGGER]
+
     network = load_json(load_json(cfg.networks_path + '/' + cfg.network_file))
     decoys = load_json(load_json(cfg.networks_path + '/' + cfg.decoys_file))
+
     receiver = Receiver(cfg, network, decoys, honeylog, None, None)
-    monitor = Monitor(cfg, network, decoys, honeylog, None, receiver)
-    receiver.monitor = monitor
-    monitor.record()
+    receiver.start(recording=True)
 
 
 @iotpot.command()

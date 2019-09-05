@@ -27,10 +27,10 @@ class Monitor:
             self.stats[group][STAT_ACK] += 1
         except KeyError as key_ex:
             self.stats[group][STAT_OTHER] += 1
-
-
-            # template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            # message = template.format(type(e).__name__, e.args)
+        # except Exception as e:
+        #     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        #     message = template.format(type(e).__name__, e.args)
+        #     print message
 
 
 
