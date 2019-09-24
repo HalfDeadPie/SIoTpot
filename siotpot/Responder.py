@@ -9,6 +9,10 @@ class Responder:
         #self.stats = {STAT_RES_ACK: 0, STAT_RES_REPORT: 0}
 
     def reply_ack(self, frame):
+        """
+        Reply ACK frame
+        :param frame: received frame
+        """
         ack_frame = frame[ZWaveReq].copy()
         ack_frame.src, ack_frame.dst = ack_frame.dst, ack_frame.src
         ack_frame.ackreq = Z_ACK_REQ_NO
@@ -28,6 +32,10 @@ class Responder:
         self.transmitter.send_frame(ack_frame)
 
     def reply_report(self, frame):
+        """
+        Reply report frame
+        :param frame: received frame
+        """
         report_frame = frame[ZWaveReq].copy()
         report_frame.src, report_frame.dst = report_frame.dst, report_frame.src
         report_frame.ackreq = Z_ACK_REQ_YES
@@ -39,27 +47,35 @@ class Responder:
         self.transmitter.send_frame(report_frame)
 
     def set_state(self, frame):
+        """
+        Change state of the decoy according to received frame
+        :param frame: received frame
+        """
         self.decoys[text_id(frame.homeid)][str(frame.src)][DEC_STATE] = frame[Raw].load
 
     def respond(self, frame):
-            try:
-                self.reply_ack(frame)
-                time.sleep(0.1)
-                cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
-                home_id = text_id(frame.homeid)
+        """
+        General function for responding
+        :param frame: received frame
+        """
+        try:
+            self.reply_ack(frame)
+            time.sleep(0.1)
+            cmd = readable_value(frame[ZWaveSwitchBin], Z_CMD)
+            home_id = text_id(frame.homeid)
 
-                if cmd == CMD_SET:
-                    if self.decoys[home_id][str(frame.dst)][DEC_STATE] != DEC_STATE_CONTROLLER:
-                        self.reply_report(frame)
-                        self.logger.debug('Responding ACK, REPORT')
+            if cmd == CMD_SET:
+                if self.decoys[home_id][str(frame.dst)][DEC_STATE] != DEC_STATE_CONTROLLER:
+                    self.reply_report(frame)
+                    self.logger.debug('Responding ACK, REPORT')
 
-                elif cmd == CMD_GET:
-                    if self.decoys[home_id][str(frame.dst)][DEC_STATE] != DEC_STATE_CONTROLLER:
-                        self.reply_report(frame)
-                        self.logger.debug('Responding ACK, REPORT')
+            elif cmd == CMD_GET:
+                if self.decoys[home_id][str(frame.dst)][DEC_STATE] != DEC_STATE_CONTROLLER:
+                    self.reply_report(frame)
+                    self.logger.debug('Responding ACK, REPORT')
 
-                elif cmd == CMD_REPORT:
-                    self.logger.debug('Responding ACK')
+            elif cmd == CMD_REPORT:
+                self.logger.debug('Responding ACK')
 
-            except Exception as e:
-                pass
+        except Exception as e:
+            pass

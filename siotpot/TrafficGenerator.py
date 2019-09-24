@@ -6,6 +6,9 @@ from CONSTANTS import *
 
 
 class TrafficGenerator:
+    """
+    Trafic Generator simulates real communication
+    """
 
     def __init__(self, configuration, networks, decoys, logger, stats, transmitter):
         self.configuration = configuration
@@ -18,6 +21,10 @@ class TrafficGenerator:
         self.stats = stats
 
     def load_decoys_frames(self, home_id):
+        """
+        Load recorded frames
+        :param home_id: network identifier
+        """
         record_files = []
 
         for node in list(self.decoys[home_id].keys()):
@@ -38,6 +45,9 @@ class TrafficGenerator:
                 self.records.append(frame)
 
     def start(self, test=None):
+        """
+        Start simulation of real communication
+        """
         home_id = None
         if self.configuration.home_id:
             home_id = self.configuration.home_id

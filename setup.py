@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='IoTpot',
+    name='SIoTpot',
     version='0.0.1',
     description="Master's Thesis work - IoT honeypot",
     author='Simon Stefunko',
@@ -9,7 +9,7 @@ setup(
     keywords='IoT, honeypot, IoTpot, Iot honeypot, security',
     license='Public Domain',
     url='https://github.com/HalfDeadPie/IoTpot',
-    packages=['iotpot'],
+    packages=['siotpot'],
     python_requires='~=2.7',
     classifiers=[
         'Intended Audience :: Developers',
@@ -23,7 +23,7 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'iotpot = iotpot.__main__',
+            'siotpot = siotpot.__main__',
         ],
     },
     install_requires=['click>=7', 'configparser>=3.7.4', 'crc16==0.1.1', 'tinydb==3.13.0', 'xxhash==1.3.0']

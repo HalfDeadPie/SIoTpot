@@ -5,6 +5,11 @@ from CONSTANTS import *
 
 
 def parse(file):
+    """
+    Parses configuration INI file
+    :param file: INI file
+    :return: parsed file
+    """
     parser = configparser.ConfigParser()
     parser.optionxform = str
     parser.read(file, encoding='utf8')
@@ -16,8 +21,7 @@ class Configuration:
         self.home_id = None
         parser = parse(filepath)
 
-        # COMMUNICATION PARAMETERS -------------------------------------------------------------------------------------
-
+        # frequency
         self.freq = freq
         if not freq:
             try:
@@ -25,6 +29,7 @@ class Configuration:
             except:
                 self.freq = DEF_FREQ
 
+        # sample rate
         self.samp_rate = samp
         if not samp:
             try:
@@ -32,6 +37,7 @@ class Configuration:
             except:
                 self.samp_rate = DEF_SAMP
 
+        # TX gain
         self.tx = tx
         if not tx:
             try:
@@ -39,6 +45,7 @@ class Configuration:
             except:
                 self.tx = DEF_TX
 
+        # path of records
         self.records_path = records
         if not records:
             try:
@@ -46,6 +53,7 @@ class Configuration:
             except:
                 sys.exit(ERROR_MISSING_RECORD_PATH)
 
+        # path of network information
         self.networks_path = networks
         if not networks:
             try:
@@ -53,6 +61,7 @@ class Configuration:
             except:
                 sys.exit(ERROR_MISSING_NETWORK_PATH)
 
+        # path of logging file
         self.logging_path = logging_path
         if not logging_path:
             try:
@@ -60,6 +69,7 @@ class Configuration:
             except:
                 sys.exit(ERROR_MISSING_LOGGING_PATH)
 
+        # path to alerts file
         self.alerts_path = alerts_path
         if not alerts_path:
             try:
@@ -67,12 +77,17 @@ class Configuration:
             except:
                 sys.exit(ERROR_MISSING_ALERTS_PATH)
 
+
         self.network_file = REC_NETWORK_FILE
         self.decoys_file = REC_DECOYS_FILE
 
         self.verbose = False
 
     def paths(self):
+        """
+        return path of records, network information, logging file and alerts file
+        :return: String records, String network_info, String logging_file, String alerts_file
+        """
         return [self.records_path, self.networks_path, self.logging_path, self.alerts_path]
 
     def path_network_file(self):

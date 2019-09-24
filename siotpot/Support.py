@@ -1,3 +1,6 @@
+# This file contains mostly supportive functions for special operations with fields, string, directories, etc...
+
+
 import json
 from array import array
 from scapy.all import *

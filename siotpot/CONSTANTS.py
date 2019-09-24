@@ -79,7 +79,7 @@ CMD_SET = 'SET'
 CMD_GET = 'GET'
 CMD_REPORT = 'REPORT'
 
-FILE_LOGS = 'iotpot.log'
+FILE_LOGS = 'siotpot.log'
 FILE_ALERTS = 'alerts.log'
 
 INFO_NEW_REAL = 'New device has been found: '
@@ -105,7 +105,7 @@ EXIT = 'exit'
 
 LOGGING_PATH = 'logging_path'
 ALERTS_PATH = 'alerts_path'
-LOGGING_FILE = 'iotpot.log'
+LOGGING_FILE = 'siotpot.log'
 ALERTS_FILE = 'alerts.log'
 
 DEF_SAMP = 2000000

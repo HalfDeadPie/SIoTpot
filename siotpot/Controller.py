@@ -1,4 +1,3 @@
-import curses
 import multiprocessing
 import random
 import shutil
@@ -18,19 +17,15 @@ from multiprocessing import Process, Pipe
 from Transmitter import Transmitter
 from Logger import Logger
 
-monitor_stats = {}
 responder_stats = {}
 iotpot_logger = None
 
 
 def signal_handler(sig, frame):
+    """
+    Exiting signal handler
+    """
     global iotpot_logger
-    if bool(monitor_stats):
-        report = build_stats_report(monitor_stats)
-        if monitor_stats[STAT_MALICIOUS] > 0:
-            iotpot_logger.critical(report)
-        else:
-            iotpot_logger.info(report)
 
     if bool(responder_stats):
         report = build_stats_report(responder_stats)
@@ -39,19 +34,31 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-signal.signal(signal.SIGINT, signal_handler)
-
-
 def generator_target(generator):
+    """
+    Starts the generator
+    :param generator: generator of simulated communication
+    """
     generator.start()
 
 
 def receiver_target(receiver, recording, passive):
+    """
+    Starts the receiver
+    :param receiver: receiver of communication
+    :param recording: mode for recording communication
+    :param passive: mode for passive monitoring
+    """
     signal.signal(signal.SIGINT, signal_handler)
     receiver.start(recording, passive)
 
 
 def set_configuration(configuration, logger):
+    """
+    Set the configuration according to configuration file or switches
+    :param configuration: includes several attributes
+    :param logger: for initialization of logging activities
+    """
     config_set = False
     while not config_set:
         try:
@@ -69,10 +76,15 @@ def set_configuration(configuration, logger):
             config_set = True
         except Exception as e:
             pass
-            # print e
+            # print e # uncommenting this causes connecting to socket which may not be ready at the start
 
 
 def stats_view(stats, honeypot_debug_level):
+    """
+    Display current stats of every group which includes SET, GET, REPORT, ACK and OTHER commands
+    :param stats: dictionary composed of statistics shared between several processes
+    :param honeypot_debug_level: debugging
+    """
     if honeypot_debug_level is 1:
         while True:
             sys.stdout.write("\r")
@@ -100,8 +112,22 @@ def stats_view(stats, honeypot_debug_level):
 @click.option('--alerts', '-a', help='Path to a alert logging file')
 @click.option('--debug', '-d', help='Level of debug (1-5)', default=1)
 @click.pass_context
-def iotpot(ctx, config, freq, samp, tx, records, networks, log, alerts, debug):
-    """Main command iotpot shares context with other subcommands"""
+def siotpot(ctx, config, freq, samp, tx, records, networks, log, alerts, debug):
+    """
+    Main command that is used always with every other subcommand and share context with them
+    :param ctx: shared context
+    :param config: configuration of the honeypot
+    :param freq: RX and TX frequency
+    :param samp: sample rate of the receiver
+    :param tx: TX gain of the transmitter
+    :param records: path to record files
+    :param networks: path to network information
+    :param log: path to logging file
+    :param alerts: path to alert file
+    :param debug: debugging level (1-5)
+    :return:
+    """
+    # share configuration, debugging level
     ctx.obj[CONFIG] = config
     ctx.obj[DEBUG_LEVEL] = debug
     config_file = ctx.obj['config']
@@ -111,25 +137,36 @@ def iotpot(ctx, config, freq, samp, tx, records, networks, log, alerts, debug):
     for path in ctx.obj[CONFIGURATION].paths():
         safe_create_dir(path)
 
+    # initialize logger
     global iotpot_logger
     iotpot_logger = Logger.initialize_logger(ctx.obj[CONFIGURATION], debug)
     ctx.obj[LOGGER] = iotpot_logger
 
 
-@iotpot.command()
+@siotpot.command()
 @click.pass_context
 @click.option('--verbose', '-v', is_flag=True, help='Display received frames.')
 @click.argument('home_id', required=False)
 def listen(ctx, verbose, home_id):
+    """
+    Passive monitoring of network
+    :param ctx: shared context
+    :param verbose: show received frames
+    :param home_id: filter frames including specified home-id
+    """
+    # initialize
+    signal.signal(signal.SIGINT, signal_handler)
     cfg = ctx.obj[CONFIGURATION]
     cfg.home_id = home_id
     cfg.verbose = verbose
     honeylog = ctx.obj[LOGGER]
 
     with multiprocessing.Manager() as manager:
+        # initialize shared network and decoy information
         network = manager.dict(load_json(cfg.networks_path + '/' + cfg.network_file))
         decoys = manager.dict(load_json(cfg.networks_path + '/' + cfg.decoys_file))
 
+        # init stats
         inner_stats = init_stats_dict()
         stats_real = manager.dict(inner_stats.copy())
         stats_malicious = manager.dict(inner_stats.copy())
@@ -146,36 +183,51 @@ def listen(ctx, verbose, home_id):
         frames_in = list()
         frames_out = list()
 
+        # initialize components
         receiver = Receiver(cfg, network, decoys, honeylog, frames_in, frames_out)
         monitor = Monitor(cfg, network, decoys, honeylog, stats)
 
         receiver.monitor = monitor
         monitor.receiver = receiver
 
+        # start configuration
         configuration_process = Process(target=set_configuration, args=(cfg, honeylog))
         configuration_process.start()
 
+        # if not verbose
         if not verbose:
+            # show only stats
             statsview_process = Process(target=stats_view, args=(stats, ctx.obj[DEBUG_LEVEL]))
             statsview_process.start()
 
+        # start reception
         receiver.start(False, True)
 
 
-@iotpot.command()
+@siotpot.command()
 @click.pass_context
 @click.option('--low', '-l', is_flag=True,
               help='Low-level mode of interaction disables responding, but the traffic is still generated.')
 @click.argument('home_id')
 def run(ctx, low, home_id):
+    """
+    Run main function of the IoT honeypot
+    :param ctx: shared context
+    :param low: low-interaction mode means that the honeypot does not respond to malicious frames
+    :param home_id: specifies the network identifier
+    """
+    # initialization
+    signal.signal(signal.SIGINT, signal_handler)
     cfg = ctx.obj[CONFIGURATION]
     cfg.home_id = home_id
     honeylog = ctx.obj[LOGGER]
 
+    # manager handles shared content between TX and RX processes
     with multiprocessing.Manager() as manager:
         network = manager.dict(load_json(cfg.networks_path + '/' + cfg.network_file))
         decoys = manager.dict(load_json(cfg.networks_path + '/' + cfg.decoys_file))
 
+        # init stats
         inner_stats = init_stats_dict()
         stats_real = manager.dict(inner_stats.copy())
         stats_malicious = manager.dict(inner_stats.copy())
@@ -192,35 +244,48 @@ def run(ctx, low, home_id):
         frames_in = manager.list()
         frames_out = manager.list()
 
+        # display real-time statistics
         statsview_process = Process(target=stats_view, args=(stats, ctx.obj[DEBUG_LEVEL]))
 
+        # if records for specified network are missing
         if not safe_key_in_dict(home_id, decoys.keys()):
+            # honeypot stops and display error
             sys.exit(ERROR_MISSING_DECOYS)
 
         signal.signal(signal.SIGINT, signal_handler)
 
+        # init frame transmitter
         transmitter = Transmitter(cfg, frames_out, stats)
 
-        if not low:  # interaction mode
+        # if not low-interaction mode
+        if not low:
+            # init responder
             responder = Responder(transmitter, decoys, honeylog)
         else:
+            # else responder not needed
             responder = None
 
+        # init receiver and monitor
         receiver = Receiver(cfg, network, decoys, honeylog, frames_in, frames_out, responder)
         monitor = Monitor(cfg, network, decoys, honeylog, stats)
 
         receiver.monitor = monitor
         monitor.receiver = receiver
 
+        # init traffic generator
         generator = TrafficGenerator(cfg, network, decoys, honeylog, stats, transmitter)
 
+        # honeypot configuration process
         configuration_process = Process(target=set_configuration, args=(cfg, honeylog))
+
+        # receiver process
         receiver_process = Process(target=receiver_target, args=(receiver, False, False))
 
         try:
             configuration_process.start()
             receiver_process.start()
             statsview_process.start()
+            # generator works in main process
             generator.start()
         except KeyboardInterrupt:
             honeylog.info('\nTerminating...')
@@ -232,86 +297,76 @@ def run(ctx, low, home_id):
         statsview_process.join()
 
 
-@iotpot.command()
+@siotpot.command()
 @click.pass_context
 def record(ctx):
-    """Records frames until users interrupt"""
+    """
+    Maps real network, record its communication, anonymize it.
+    Records are saved into pcap files. Network and decoy information are saved into json files.
+    :param ctx: shared context
+    """
     cfg = ctx.obj[CONFIGURATION]
     honeylog = ctx.obj[LOGGER]
 
-    network = load_json(load_json(cfg.networks_path + '/' + cfg.network_file))
-    decoys = load_json(load_json(cfg.networks_path + '/' + cfg.decoys_file))
+    network = load_json(cfg.networks_path + '/' + cfg.network_file)
+    decoys = load_json(cfg.networks_path + '/' + cfg.decoys_file)
 
     receiver = Receiver(cfg, network, decoys, honeylog, None, None)
     receiver.start(recording=True)
 
 
-@iotpot.command()
-@click.pass_context
-@click.argument('home_id')
-def add(ctx, home_id):
-    """Add single new device to a network information"""
-    configuration = ctx.obj[CONFIGURATION]
-    configuration.home_id = home_id
-    logger = ctx.obj[LOGGER]
-    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
-    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
-    receiver = Receiver(configuration, network, decoys, logger, None, None)
-    receiver.add_device(home_id)
-
-
-@iotpot.command()
-@click.pass_context
-@click.argument('home_id')
-@click.argument('node_id')
-def delete(ctx, home_id, node_id):
-    """Remove single decoy and its corresponding records"""
-    configuration = ctx.obj[CONFIGURATION]
-    configuration.home_id = home_id
-    logger = ctx.obj[LOGGER]
-    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
-    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
-    records_to_delete = remove_duplicate_decoys(home_id, node_id, decoys, configuration)
-    remove_unrecorded_decoys(decoys, home_id, records_to_delete)
-    save_networks(configuration, network, decoys)
-
-
-@iotpot.command()
+@siotpot.command()
 @click.pass_context
 @click.argument('home_id_from')
 @click.argument('home_id_to', required=False)
 def replicate(ctx, home_id_from, home_id_to):
-    """Replicate records and data from home_id_from to home_id_to"""
+    """
+    Replicate decoy information and records from one network to anoter. Using a single argument causes
+    extending specified network.
+    :param ctx: shared context
+    :param home_id_from: source network
+    :param home_id_to: destination network
+    :return:
+    """
+    # init information
     configuration = ctx.obj[CONFIGURATION]
-    network = load_json(configuration.networks_path + '/' + configuration.real_networks_name)
-    decoys = load_json(configuration.networks_path + '/' + configuration.virtual_networks_name)
+    network = load_json(configuration.networks_path + '/' + configuration.network_file)
+    decoys = load_json(configuration.networks_path + '/' + configuration.decoys_file)
 
+    # check number of arguments
     if not home_id_to:
         home_id_to = home_id_from
 
+    # create directory for new network
     safe_create_dir(configuration.records_path + '/' + home_id_to)
 
+    # check existence of source network
     if home_id_from in decoys:
         decoys_from = decoys[home_id_from].keys()
         decoys_from = [int(x) for x in decoys_from]
     else:
         sys.exit(ERROR_MISSING_NETWORK)
 
+    # check existence of mapping of the real destination network
+    # (unmapped network can cause NodeID collisions with decoys from source network)
     if home_id_to in network.keys():
         real_nodes_to = network[home_id_to]
     else:
         real_nodes_to = []
         print '\n' + WARNING_NO_REAL + '\n'
 
+    # check existence of destination's decoys
     if home_id_to in decoys:
         decoys_to = decoys[home_id_to].keys()
         decoys_to = [int(x) for x in decoys_to]
     else:
         decoys_to = []
 
+    # get list of free NodeId
     all_nodes_to = real_nodes_to + decoys_to
     free_ids = list_free_ids(all_nodes_to)
 
+    # create mapping
     mapping = {}
     for decoy_from in decoys_from:
         if decoys[home_id_from][str(decoy_from)][DEC_STATE] == DEC_STATE_CONTROLLER:
@@ -320,8 +375,10 @@ def replicate(ctx, home_id_from, home_id_to):
             mapping[decoy_from] = random.choice(free_ids)
         free_ids.remove(mapping[decoy_from])
 
+    # load source records
     record_frames = load_decoys_frames(configuration.records_path + '/' + home_id_from)
 
+    # swap identificators according to mapping
     for r in record_frames:
         if r.src in mapping.keys():
             r.src = mapping[r.src]
@@ -329,9 +386,13 @@ def replicate(ctx, home_id_from, home_id_to):
             r.dst = mapping[r.dst]
         r.homeid = int(home_id_to, 0)
 
+    # get current time
     time_text = str(time.strftime(FILE_TIME_FORMAT))
+
+    # name for the new record
     record_name = 'copy_' + home_id_from + '_' + time_text + RECORD_EXTENSION
 
+    # create the new information
     for from_decoy, new_decoy in mapping.iteritems():
         safe_create_dict_dict(decoys, home_id_to)
         safe_create_dict_dict(decoys[home_id_to], str(new_decoy))
@@ -342,17 +403,21 @@ def replicate(ctx, home_id_from, home_id_to):
         else:
             decoys[home_id_to][str(new_decoy)][DEC_STATE] = unicode(DEC_STATE_OFF)
 
+    # save the record
     wrpcap(configuration.records_path + '/' + home_id_to + '/' + record_name, record_frames)
     if decoys:
         json.dump(decoys,
                   open(configuration.networks_path + '/' +
-                       configuration.virtual_networks_name, 'w'))
+                       configuration.decoys_file, 'w'))
 
 
-@iotpot.command()
+@siotpot.command()
 @click.pass_context
 def status(ctx):
-    """Display persistent information of the IoT honeypot"""
+    """
+    Display persistent information like network, decoy information and its records
+    :param ctx: shared context
+    """
     cfg = ctx.obj[CONFIGURATION]
     network = load_json(cfg.path_network_file())
     decoys = load_json(cfg.path_decoys_file())
@@ -374,11 +439,15 @@ def status(ctx):
         print ''
 
 
-@iotpot.command()
+@siotpot.command()
 @click.pass_context
 @click.argument('file')
 def read(ctx, file):
-    """Display records in human-readable form"""
+    """
+    Display records in human-readable form
+    :param ctx: shared context
+    :param file: record to be displayed
+    """
     frames = rdpcap(file)
     for frame in frames:
         show_hex(frame)
@@ -386,10 +455,13 @@ def read(ctx, file):
         print '\n'
 
 
-@iotpot.command()
+@siotpot.command()
 @click.pass_context
 def reset(ctx):
-    """Remove all persistent information"""
+    """
+    WARNING! Remove all persistent information!
+    :param ctx: shared context
+    """
     configuration = ctx.obj[CONFIGURATION]
 
     # remove records
@@ -409,4 +481,4 @@ def reset(ctx):
 
 
 if __name__ == '__main__':
-    iotpot(obj={})
+    siotpot(obj={})

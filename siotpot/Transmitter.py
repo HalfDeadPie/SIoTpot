@@ -16,6 +16,10 @@ class Transmitter:
         self.stats = stats
 
     def send_frame(self, frame):
+        """
+        Send single frame, increment sequence number
+        :param frame: frame to be sent
+        """
         self.seqn += 1
         if self.seqn >= SEQN_RANGE:
             self.seqn = 0

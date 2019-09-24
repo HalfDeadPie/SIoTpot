@@ -1,10 +1,13 @@
-IoTpot
+SIoTpot
 ***************************
 IoT honeypot
 ============================
-This project is the implementation of my Master's Thesis. IoTpot is the IoT honeypot
-for the Z-Wave protocol. The honeypot records legitimate commuication, creates virtual decoys on the network
-and lure attackers. Its method can detect attackers and provide simple statistics about the traffic.
+This project is the implementation of my Master's Thesis. SIoTpot is the IoT honeypot
+for the Z-Wave protocol.
+
+- records legitimate communication in order to create system of decoys
+- transmit simulated communication to lure attackers
+- passive monitoring of a network
 
 Abstract of the Thesis
 ==========================
@@ -46,11 +49,11 @@ It is highly recommended to replace files in:
 
 with files *Zwave.grc* and *top_block.py* that can be found in this repository.
 
-**IoTpot**
+**SIoTpot**
 
 Clone this repository:
 
-    git clone https://github.com/HalfDeadPie/IoTpot
+    git clone https://github.com/HalfDeadPie/SIoTpot
 
 and use *setup.py* for installation:
 
@@ -61,7 +64,7 @@ Examples of Usage
 
 All subcommands and options can be displayed using :
 
-    iotpot --help
+    siotpot --help
 
 It is highly recommended to use a configuration file. An example of configuration file can be found in this repository (*config.cfg*):
 
@@ -82,19 +85,23 @@ It is highly recommended to use a configuration file. An example of configuratio
 
 Recording starts with:
 
-    iotpot record
+    siotpot record
 
 The main functionality starts with:
 
-    iotpot run
+    siotpot run HOME-ID
 
 All persisent information of the IoT honeypot can be displayed using this subcommand:
 
-    iotpot status
+    siotpot status
+
+Passive monitoring
+
+    siotpot listen
 
 All persistent information of the IoT honeypot can be deleted using this subcommand:
 
-    iotpot reset
+    siotpot reset
 
 Testing
 ====================

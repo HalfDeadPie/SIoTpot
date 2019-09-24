@@ -1,8 +1,7 @@
 import logging
+
 from copy import copy
-
 from logging import Formatter
-
 from CONSTANTS import LOGGING_FILE, ALERTS_FILE, MAPPING, SUFFIX, PREFIX
 
 
@@ -23,7 +22,7 @@ class ColoredFormatter(Formatter):
 class Logger:
     @staticmethod
     def initialize_logger(configuration, debug):
-        iotpot_logger = logging.getLogger('iotpot')
+        iotpot_logger = logging.getLogger('siotpot')
         iotpot_logger.setLevel(logging.DEBUG)
 
         fh = logging.FileHandler(configuration.logging_path + LOGGING_FILE)
